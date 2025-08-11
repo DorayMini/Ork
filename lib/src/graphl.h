@@ -1,5 +1,9 @@
+#pragma once
+
+#include <any>
+#include <string_view>
+
 class graphl {
 public:
-  int test();
-private:
+    std::any execute(std::string_view str);
 };

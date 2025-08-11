@@ -1,5 +1,5 @@
 #include "graphl.h"
 
-int graphl::test() {
-  return 2;
+std::any graphl::execute(std::string_view str) {
+    return 1;
 }
