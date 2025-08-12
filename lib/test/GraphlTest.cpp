@@ -6,9 +6,9 @@ TEST(Lexer, Case1) {
 
   std::string_view source = "fn main() { return 42; }";
 
-  std::vector<Token> processed = lexer::proccess(source);
+  std::vector<Lexem> processed = lexer::proccess(source);
 
-  std::vector<Token> expected = {
+  std::vector<Lexem> expected = {
     KEYWORD::FN,
     IDENTIFIER{"main"},
     LPAR{},

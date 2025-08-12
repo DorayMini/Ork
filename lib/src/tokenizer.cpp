@@ -8,8 +8,8 @@
 #include <locale>
 #include <map>
 
-std::vector<lexer::token::Token> lexer::proccess(std::string_view input) {
-    std::vector<token::Token> tokens;
+std::vector<lexer::token::Lexem> lexer::proccess(std::string_view input) {
+    std::vector<token::Lexem> tokens;
     int line = 1;
 
     for (auto iter = input.begin(); iter != input.end(); ++iter) {
@@ -26,7 +26,8 @@ std::vector<lexer::token::Token> lexer::proccess(std::string_view input) {
 
                     static std::map<std::string_view, token::KEYWORD> keywords = {
                         {"fn", token::KEYWORD::FN},
-                        {"return", token::KEYWORD::RETURN}
+                        {"return", token::KEYWORD::RETURN},
+                        {"let", token::KEYWORD::LET}
                     };
 
                     if (auto keyword = keywords.find(valueString); keyword != keywords.end()) {

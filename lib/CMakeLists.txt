@@ -1,9 +1,7 @@
 project(graphl_lib)
 
 file(GLOB_RECURSE SRCS src/*.cpp)
-add_library(graphl_lib STATIC ${SRCS}
-        src/tokenizer.cpp
-        src/tokenizer.h)
+add_library(graphl_lib STATIC ${SRCS})
 target_include_directories(graphl_lib PUBLIC src)
 
 file(GLOB_RECURSE TEST_SRCS test/*.cpp)

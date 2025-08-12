@@ -2,10 +2,13 @@
 #include <string>
 #include <variant>
 
+#include "value.h"
+
 namespace lexer::token {
     enum class KEYWORD {
         FN,
-        RETURN
+        RETURN,
+        LET
     };
     struct LPAR {
         bool operator==(const LPAR&) const = default;
@@ -31,7 +34,8 @@ namespace lexer::token {
     }; // ,
     struct INTEGER {
         bool operator==(const INTEGER&) const = default;
-        int32_t value;
+
+        Value value;
     };
     struct STRING {
         bool operator==(const STRING&) const = default;
@@ -53,7 +57,7 @@ namespace lexer::token {
         bool operator==(const EQUAL&) const = default;
     };
 
-    using Token = std::variant<
+    using Lexem = std::variant<
         KEYWORD,
         LPAR,
         RPAR,

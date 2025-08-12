@@ -5,5 +5,5 @@
 #include "token.h"
 
 namespace lexer {
-    std::vector<token::Token> proccess(std::string_view input);;
+    std::vector<token::Lexem> proccess(std::string_view input);;
 } // namespace lexer::token
