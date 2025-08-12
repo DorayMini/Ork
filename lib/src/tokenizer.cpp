@@ -32,12 +32,10 @@ std::vector<lexer::token::Lexem> lexer::proccess(std::string_view input) {
 
                     if (auto keyword = keywords.find(valueString); keyword != keywords.end()) {
                         tokens.emplace_back(keyword->second);
-                        fmt::println("keyword: {}", keyword->first);
                         break;
                     }
 
                     tokens.emplace_back(token::IDENTIFIER{ .value = valueString });
-                    fmt::println("identifier: {}", valueString);
                     break;
                 }
                 if (isdigit(*iter)) {
