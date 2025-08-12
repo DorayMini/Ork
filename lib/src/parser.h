@@ -13,13 +13,12 @@ class parser {
 public:
      explicit parser(std::span<lexer::token::Lexem> tokens) : tokens_(tokens) {}
 
-     std::unique_ptr<expression::Base> parse() {
-          return parseExpression();
-     }
+     std::unique_ptr<expression::Base> parse();
 private:
      std::span<lexer::token::Lexem> tokens_;
 
      std::unique_ptr<expression::Base> parseExpression(int leftBindingPower = 0);
+     std::unique_ptr<expression::Base> parseVariable();
 
      [[nodiscard]] const lexer::token::Lexem& peek() const {
           return tokens_.front();

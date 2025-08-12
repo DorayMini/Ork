@@ -33,9 +33,9 @@ namespace expression {
                     lhsEqual = false;
                 }
             }
-        } else if (auto lhsConst = dynamic_cast<const Constant*>(lhs.get())) {
-            if (auto otherConst = dynamic_cast<const Constant*>(otherB->lhs.get())) {
-                lhsEqual = lhsConst->equals(*otherConst);
+        } else if (auto lhsBase = dynamic_cast<const Base*>(lhs.get())) {
+            if (auto otherBase = dynamic_cast<const Base*>(otherB->lhs.get())) {
+                lhsEqual = lhsBase->equals(*otherBase);
             }
         } else
             return false;
@@ -49,12 +49,21 @@ namespace expression {
                     rhsEqual = false;
                 }
             }
-        } else if (auto rhsConst = dynamic_cast<const Constant*>(rhs.get())) {
-            if (auto otherConst = dynamic_cast<const Constant*>(otherB->rhs.get())) {
-                rhsEqual = rhsConst->equals(*otherConst);
+        } else if (auto rhsBase = dynamic_cast<const Base*>(rhs.get())) {
+            if (auto otherBase = dynamic_cast<const Base*>(otherB->rhs.get())) {
+                rhsEqual = rhsBase->equals(*otherBase);
             }
-        }
+        } else
+            return false;
 
         return lhsEqual && rhsEqual;
+    }
+
+    bool Identifier::equals(const Base &other) const {
+        auto otherIdentifier = dynamic_cast<const Identifier*>(&other);
+        if (!otherIdentifier) {
+            return false;
+        }
+        return (name == otherIdentifier->name);
     }
 } // namespace expression

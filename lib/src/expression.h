@@ -20,13 +20,12 @@ namespace expression {
 
     class Constant final : public Base {
     public:
-        explicit Constant(const Value &value) : value(value) {
-        }
+        Value value;
+
+        explicit Constant(const Value &value) : value(value) {}
 
         ~Constant() override = default;
         bool equals(const Base &other) const override;
-
-        Value value;
     };
 
     using Op = std::variant<lexer::token::PLUS, lexer::token::MINUS, lexer::token::SLASH, lexer::token::EQUAL, lexer::token::ASTERISK>;
@@ -42,6 +41,14 @@ namespace expression {
 
         ~Binary() override = default;
 
+        [[nodiscard]] bool equals(const Base& other) const override;
+    };
+
+    class Identifier final : public Base {
+    public:
+        std::string name;
+        explicit Identifier(const std::string &name) : name(name) {}
+        ~Identifier() override = default;
         [[nodiscard]] bool equals(const Base& other) const override;
     };
 } // namespace expression
