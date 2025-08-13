@@ -25,15 +25,7 @@ namespace expression {
 
         bool lhsEqual = false;
 
-        if (auto lhsBinary = dynamic_cast<const Binary*>(lhs.get())) {
-            if (auto otherBinary = dynamic_cast<const Binary*>(otherB->lhs.get())) {
-                if (lhsBinary->op == otherBinary->op) {
-                    lhsEqual = lhsBinary->equals(*otherBinary);
-                } else {
-                    lhsEqual = false;
-                }
-            }
-        } else if (auto lhsBase = dynamic_cast<const Base*>(lhs.get())) {
+        if (auto lhsBase = dynamic_cast<const Base*>(lhs.get())) {
             if (auto otherBase = dynamic_cast<const Base*>(otherB->lhs.get())) {
                 lhsEqual = lhsBase->equals(*otherBase);
             }
@@ -41,15 +33,8 @@ namespace expression {
             return false;
 
         bool rhsEqual = false;
-        if (auto rhsBinary = dynamic_cast<const Binary*>(rhs.get())) {
-            if (auto otherBinary = dynamic_cast<const Binary*>(otherB->rhs.get())) {
-                if (rhsBinary->op == otherBinary->op) {
-                    rhsEqual = rhsBinary->equals(*otherBinary);
-                } else {
-                    rhsEqual = false;
-                }
-            }
-        } else if (auto rhsBase = dynamic_cast<const Base*>(rhs.get())) {
+
+        if (auto rhsBase = dynamic_cast<const Base*>(rhs.get())) {
             if (auto otherBase = dynamic_cast<const Base*>(otherB->rhs.get())) {
                 rhsEqual = rhsBase->equals(*otherBase);
             }
@@ -65,5 +50,25 @@ namespace expression {
             return false;
         }
         return (name == otherIdentifier->name);
+    }
+
+    bool Variable::equals(const Base &other) const {
+        auto otherVariable = dynamic_cast<const Variable*>(&other);
+        if (!otherVariable) {
+            return false;
+        }
+        if (otherVariable->type != type) {
+            return false;
+        }
+
+        bool lhsEqual = false;
+        bool rhsEqual = false;
+        if (name->equals(*otherVariable->name)) {
+            lhsEqual = true;
+            if (value->equals(*otherVariable->value)) {
+                rhsEqual = true;
+            }
+        }
+        return lhsEqual && rhsEqual;
     }
 } // namespace expression

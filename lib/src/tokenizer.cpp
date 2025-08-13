@@ -27,11 +27,19 @@ std::vector<lexer::token::Lexem> lexer::proccess(std::string_view input) {
                     static std::map<std::string_view, token::KEYWORD> keywords = {
                         {"fn", token::KEYWORD::FN},
                         {"return", token::KEYWORD::RETURN},
-                        {"let", token::KEYWORD::LET}
                     };
 
                     if (auto keyword = keywords.find(valueString); keyword != keywords.end()) {
                         tokens.emplace_back(keyword->second);
+                        break;
+                    }
+
+                    static std::map<std::string_view, token::TYPE> types = {
+                        {"int", token::TYPE::INTEGER}
+                    };
+
+                    if (auto type = types.find(valueString); type != types.end()) {
+                        tokens.emplace_back(type->second);
                         break;
                     }
 

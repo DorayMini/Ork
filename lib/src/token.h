@@ -7,8 +7,10 @@
 namespace lexer::token {
     enum class KEYWORD {
         FN,
-        RETURN,
-        LET
+        RETURN
+    };
+    enum class TYPE {
+        INTEGER
     };
     struct LPAR {
         bool operator==(const LPAR&) const = default;
@@ -59,6 +61,7 @@ namespace lexer::token {
 
     using Lexem = std::variant<
         KEYWORD,
+        TYPE,
         LPAR,
         RPAR,
         LBRACE,

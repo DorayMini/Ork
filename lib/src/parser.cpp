@@ -11,7 +11,7 @@
 #include "expression.h"
 
 std::unique_ptr<expression::Base> parser::parse() {
-    if (std::holds_alternative<lexer::token::IDENTIFIER>(peek())) {
+    if (std::holds_alternative<lexer::token::TYPE>(peek())) {
         return parseVariable();
     }
     return parseExpression();
@@ -39,19 +39,19 @@ std::unique_ptr<expression::Base> parser::parseExpression(int leftBindingPower) 
     for (;;) {
         auto [rightBindingPower, op] = std::visit(
             match{
-                [](lexer::token::PLUS token) -> std::tuple<int, expression::Op> {
-                    return {1, token};
+                [](lexer::token::PLUS) -> std::tuple<int, expression::BinaryOp> {
+                    return {1, expression::BinaryOp::Plus};
                 },
-                [](lexer::token::MINUS token) -> std::tuple<int, expression::Op> {
-                    return {1, token};
+                [](lexer::token::MINUS) -> std::tuple<int, expression::BinaryOp> {
+                    return {1, expression::BinaryOp::Minus};
                 },
-                [](lexer::token::ASTERISK token) -> std::tuple<int, expression::Op> {
-                    return {2, token};
+                [](lexer::token::ASTERISK) -> std::tuple<int, expression::BinaryOp> {
+                    return {2, expression::BinaryOp::Asterisk};
                 },
-                [](lexer::token::SLASH token) -> std::tuple<int, expression::Op> {
-                    return {2, token};
+                [](lexer::token::SLASH) -> std::tuple<int, expression::BinaryOp> {
+                    return {2, expression::BinaryOp::Slash};
                 },
-                [](auto &&) -> std::tuple<int, expression::Op> {
+                [](auto &&) -> std::tuple<int, expression::BinaryOp> {
                     throw std::runtime_error(fmt::format("TODO: error"));
                 }
             },
@@ -78,12 +78,27 @@ std::unique_ptr<expression::Base> parser::parseExpression(int leftBindingPower) 
 }
 
 std::unique_ptr<expression::Base> parser::parseVariable() {
+    auto type = std::visit(
+        match{
+            [](lexer::token::TYPE type) -> expression::VarType {
+                switch (type) {
+                    case lexer::token::TYPE::INTEGER:
+                        return expression::VarType::Int;
+                    default: break;
+                }
+            },
+            [](auto &&) -> expression::VarType {
+                throw std::runtime_error(fmt::format("Unexpected token. Expected variable type"));
+            }
+        },
+        take()
+    );
     auto lhs = std::visit(
         match{
-            [] (lexer::token::IDENTIFIER token) -> std::unique_ptr<expression::Base> {
+            [](lexer::token::IDENTIFIER token) -> std::unique_ptr<expression::Identifier> {
                 return std::make_unique<expression::Identifier>(fmt::to_string(token.value));
             },
-            [] (auto&&) -> std::unique_ptr<expression::Base> {
+            [](auto &&) -> std::unique_ptr<expression::Identifier> {
                 throw std::runtime_error(fmt::format("Unexpected token."));
             }
         },
@@ -98,10 +113,9 @@ std::unique_ptr<expression::Base> parser::parseVariable() {
 
     auto rhs = parseExpression();
 
-    return std::make_unique<expression::Binary>(
-        lexer::token::EQUAL{},
+    return std::make_unique<expression::Variable>(
+        type,
         std::move(lhs),
         std::move(rhs)
     );
 }
-

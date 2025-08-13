@@ -13,9 +13,9 @@ TEST(Parser, Case1) {
     parser p{std::span(t)};
 
     expression::Binary expected(
-        lexer::token::PLUS{},
+        expression::BinaryOp::Plus,
         std::make_unique<expression::Binary>(
-            lexer::token::ASTERISK{},
+            expression::BinaryOp::Asterisk,
             std::make_unique<expression::Constant>(2),
             std::make_unique<expression::Constant>(2)
         ),
@@ -31,10 +31,10 @@ TEST(Parser, Case2) {
     std::vector t(lexer::proccess("2 + 2 * 2;"));
     parser p{std::span(t)};
     expression::Binary expected(
-        lexer::token::PLUS{},
+        expression::BinaryOp::Plus,
         std::make_unique<expression::Constant>(2),
         std::make_unique<expression::Binary>(
-            lexer::token::ASTERISK{},
+            expression::BinaryOp::Asterisk,
             std::make_unique<expression::Constant>(2),
             std::make_unique<expression::Constant>(2)
         )
@@ -46,12 +46,30 @@ TEST(Parser, Case2) {
 }
 
 TEST(Parser, Case3) {
-    std::vector t(lexer::proccess("a = 2;"));
+    std::vector t(lexer::proccess("int a = 2;"));
     parser p{std::span(t)};
-    expression::Binary expected(
-        lexer::token::EQUAL{},
+    expression::Variable expected(
+        expression::VarType::Int,
         std::make_unique<expression::Identifier>("a"),
         std::make_unique<expression::Constant>(2)
+    );
+
+    auto parsed = p.parse();
+    bool equal = parsed->equals(expected);
+    EXPECT_TRUE(equal);
+}
+
+TEST(Parser, Case4) {
+    std::vector t(lexer::proccess("int a = 2 + 2;"));
+    parser p{std::span(t)};
+    expression::Variable expected(
+        expression::VarType::Int,
+        std::make_unique<expression::Identifier>("a"),
+        std::make_unique<expression::Binary>(
+            expression::BinaryOp::Plus,
+            std::make_unique<expression::Constant>(2),
+            std::make_unique<expression::Constant>(2)
+        )
     );
 
     auto parsed = p.parse();

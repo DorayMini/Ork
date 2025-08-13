@@ -28,14 +28,20 @@ namespace expression {
         bool equals(const Base &other) const override;
     };
 
-    using Op = std::variant<lexer::token::PLUS, lexer::token::MINUS, lexer::token::SLASH, lexer::token::EQUAL, lexer::token::ASTERISK>;
+    enum class BinaryOp {
+        Minus,
+        Plus,
+        Asterisk,
+        Slash,
+        Equal,
+    };
     class Binary final : public Base {
     public:
-        Op op;
+        BinaryOp op;
         std::unique_ptr<Base> lhs;
         std::unique_ptr<Base> rhs;
 
-        Binary(const Op& op, std::unique_ptr<Base> lhs, std::unique_ptr<Base> rhs)
+        Binary(const BinaryOp& op, std::unique_ptr<Base> lhs, std::unique_ptr<Base> rhs)
             : op(op), lhs(std::move(lhs)), rhs(std::move(rhs)) {
         }
 
@@ -49,6 +55,20 @@ namespace expression {
         std::string name;
         explicit Identifier(const std::string &name) : name(name) {}
         ~Identifier() override = default;
+        [[nodiscard]] bool equals(const Base& other) const override;
+    };
+
+    enum class VarType {
+        Int
+    };
+    class Variable final : public Base {
+    public:
+        VarType type;
+        std::unique_ptr<Identifier> name;
+        std::unique_ptr<Base> value = nullptr;
+
+        explicit Variable(VarType type, std::unique_ptr<Identifier> name, std::unique_ptr<Base> value) : type(type), name(std::move(name)), value(std::move(value)) {}
+        ~Variable() override = default;
         [[nodiscard]] bool equals(const Base& other) const override;
     };
 } // namespace expression
