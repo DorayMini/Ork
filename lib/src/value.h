@@ -7,6 +7,5 @@
 #include <variant>
 
 using Value = std::variant<
-    std::monostate,
     int32_t
 >;

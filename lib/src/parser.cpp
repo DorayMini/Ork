@@ -77,7 +77,7 @@ std::unique_ptr<expression::Base> parser::parseExpression(int leftBindingPower) 
     return lhs;
 }
 
-std::unique_ptr<expression::Base> parser::parseVariable() {
+std::unique_ptr<expression::Variable> parser::parseVariable() {
     auto type = std::visit(
         match{
             [](lexer::token::TYPE type) -> expression::VarType {
