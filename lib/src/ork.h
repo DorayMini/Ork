@@ -3,7 +3,7 @@
 #include <any>
 #include <string_view>
 
-class graphl {
+class ork {
 public:
     std::any execute(std::string_view str);
 };

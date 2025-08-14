@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 3.31)
-
-project(graphl)
-
 set(CMAKE_CXX_STANDARD 20)
+
+project(ork)
 
 include(FetchContent)
 FetchContent_Declare(
@@ -22,5 +21,5 @@ FetchContent_MakeAvailable(fmt)
 
 add_subdirectory(lib)
 
-add_executable(graphl main.cpp)
-target_link_libraries(${PROJECT_NAME} PUBLIC graphl_lib)
+add_executable(ork main.cpp)
+target_link_libraries(${PROJECT_NAME} PUBLIC ork_lib)

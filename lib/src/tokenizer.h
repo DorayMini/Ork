@@ -4,6 +4,6 @@
 
 #include "token.h"
 
-namespace lexer {
+namespace ork::lexer {
     std::vector<token::Lexem> proccess(std::string_view input);;
-} // namespace lexer::token
+} // namespace ork::lexer

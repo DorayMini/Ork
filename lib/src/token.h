@@ -4,7 +4,7 @@
 
 #include "value.h"
 
-namespace lexer::token {
+namespace ork::lexer::token {
     enum class KEYWORD {
         FN,
         RETURN
@@ -77,4 +77,4 @@ namespace lexer::token {
         SLASH,
         EQUAL
     >;
-} // namespace lexer::token
+} // namespace ork::lexer::token

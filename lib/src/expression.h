@@ -10,7 +10,7 @@
 #include "token.h"
 #include "value.h"
 
-namespace expression {
+namespace ork::expression {
     class Base {
     public:
         virtual ~Base() = default;
@@ -71,4 +71,4 @@ namespace expression {
         ~Variable() override = default;
         [[nodiscard]] bool equals(const Base& other) const override;
     };
-} // namespace expression
+} // namespace ork::expression

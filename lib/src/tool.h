@@ -4,10 +4,12 @@
 
 #pragma once
 
-template <class... Args>
-struct match: Args... {
-  using Args::operator()...;
-};
+namespace ork {
+  template <class... Args>
+  struct match: Args... {
+    using Args::operator()...;
+  };
 
-template <class... Ts>
-match(Ts...) -> match<Ts...>;
+  template <class... Ts>
+  match(Ts...) -> match<Ts...>;
+} // namespace ork

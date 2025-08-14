@@ -7,9 +7,8 @@
 
 #include "expression.h"
 #include "fmt/chrono.h"
-#include "tool.h"
 
-namespace TACGenerator {
+namespace ork::TACGenerator {
     enum class Operation {
         ADD,
         SUB,
@@ -41,4 +40,4 @@ namespace TACGenerator {
         std::vector<Instruction> instructions;
         unsigned int counter = 0;
     };
-} // namespace TACGenerator
+} // namespace ork::TACGenerator

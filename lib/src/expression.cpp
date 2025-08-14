@@ -1,10 +1,10 @@
 //
 // Created by doray on 8/11/25.
-//
 
 #include "expression.h"
 
-namespace expression {
+
+namespace ork::expression {
     bool Constant::equals(const Base& other) const {
         auto otherConstant = dynamic_cast<const Constant*>(&other);
         if (!otherConstant) {
@@ -71,4 +71,4 @@ namespace expression {
         }
         return lhsEqual && rhsEqual;
     }
-} // namespace expression
+} // namespace ork::expression

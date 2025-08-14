@@ -7,6 +7,8 @@
 #include "TACGenerator.h"
 #include "tokenizer.h"
 
+using namespace ork;
+
 TEST(TECGenerator, Case1) {
     std::vector t(lexer::proccess("int a = 2 + 2;"));
     parser p{std::span(t)};

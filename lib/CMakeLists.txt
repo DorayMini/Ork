@@ -1,11 +1,11 @@
-project(graphl_lib)
+project(ork_lib)
 
 file(GLOB_RECURSE SRCS src/*.cpp)
-add_library(graphl_lib STATIC ${SRCS})
-target_include_directories(graphl_lib PUBLIC src)
+add_library(ork_lib STATIC ${SRCS})
+target_include_directories(ork_lib PUBLIC src)
 
 file(GLOB_RECURSE TEST_SRCS test/*.cpp)
 
-add_executable(graphl_tests ${TEST_SRCS})
-target_link_libraries(graphl_lib PUBLIC fmt::fmt)
-target_link_libraries(graphl_tests gtest gtest_main graphl_lib)
+add_executable(ork_tests ${TEST_SRCS})
+target_link_libraries(ork_lib PUBLIC fmt::fmt)
+target_link_libraries(ork_tests gtest gtest_main ork_lib)

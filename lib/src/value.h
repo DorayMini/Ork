@@ -3,9 +3,10 @@
 //
 
 #pragma once
-#include <string>
 #include <variant>
 
-using Value = std::variant<
-    int32_t
->;
+namespace ork {
+    using Value = std::variant<
+        int32_t
+    >;
+} // namespace ork

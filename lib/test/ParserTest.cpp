@@ -8,6 +8,7 @@
 #include "tokenizer.h"
 #include "parser.h"
 
+using namespace ork;
 TEST(Parser, Case1) {
     std::vector t(lexer::proccess("2 * 2 + 2;"));
     parser p{std::span(t)};

@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "tokenizer.h"
 
+using namespace ork;
 using namespace lexer::token;
 TEST(Lexer, Case1) {
 
