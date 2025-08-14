@@ -8,15 +8,8 @@
 
 #include <typeinfo>
 #include <cxxabi.h>
-
-std::string dynamic_type(expression::Base* obj) {
-    int status;
-    const char* mangled = typeid(*obj).name();
-    char* demangled = abi::__cxa_demangle(mangled, nullptr, nullptr, &status);
-    std::string r = status == 0 ? demangled : mangled;
-    std::free(demangled);
-    return r;
-}
+#include <functional>
+#include <map>
 
 std::unique_ptr<TACGenerator::VarName> TACGenerator::Generator::generate(std::unique_ptr<expression::Base> node) {
     if (auto i = dynamic_cast<expression::Identifier *>(node.get())) {
@@ -25,16 +18,41 @@ std::unique_ptr<TACGenerator::VarName> TACGenerator::Generator::generate(std::un
     if (auto c = dynamic_cast<expression::Constant *>(node.get())) {
         if (std::holds_alternative<int32_t>(c->value)) {
             return std::make_unique<VarName>(
-                fmt::to_string(std::get<int32_t>(c->value)));
+                std::get<int32_t>(c->value));
         }
     }
 
     if (auto b = dynamic_cast<expression::Binary *>(node.get())) {
+        auto g_op = getOperation(b->op);
+        auto g_arg1 = generate(std::move(b->lhs));
+        auto g_arg2 = generate(std::move(b->rhs));
+
+        if (std::holds_alternative<Value>(*g_arg1)) {
+            if (std::holds_alternative<Value>(*g_arg2)) {
+                return std::make_unique<VarName>(std::visit([&](auto &&a, auto &&b) -> Value {
+                    using T1 = std::decay_t<decltype(a)>;
+                    using T2 = std::decay_t<decltype(b)>;
+                    std::map<Operation, std::function<Value(T1, T2)> > op{
+                        {Operation::ADD,  [](T1 x, T2 y){ return Value{x + y}; }},
+                        {Operation::SUB,  [](T1 x, T2 y){ return Value{x - y}; }},
+                        {Operation::MULT, [](T1 x, T2 y){ return Value{x * y}; }},
+                        {Operation::DIV,  [](T1 x, T2 y){ return Value{x / y}; }},
+                    };
+
+                    if (auto fun = op.find(g_op); fun != op.end()) {
+                        return fun->second(a, b);
+                    }
+
+                    return Value{};
+                }, std::get<Value>(*g_arg1), std::get<Value>(*g_arg2)));
+            }
+        }
+
         std::string result = fmt::format("f{}", counter++);
         instructions.push_back(std::move(Instruction{
-            .op = getOperation(b->op),
-            .arg1 = std::move(generate(std::move(b->lhs))),
-            .arg2 = generate(std::move(b->rhs)),
+            .op = g_op,
+            .arg1 = std::move(g_arg1),
+            .arg2 = std::move(g_arg2),
             .result = std::make_unique<VarName>(result)
         }));
         fmt::println("{}", result);
@@ -57,7 +75,7 @@ std::vector<TACGenerator::Instruction> TACGenerator::Generator::takeInstructions
     return std::move(instructions);
 }
 
-TACGenerator::Operation TACGenerator::Generator::getOperation(const expression::BinaryOp& node) {
+TACGenerator::Operation TACGenerator::Generator::getOperation(const expression::BinaryOp &node) {
     switch (node) {
         case expression::BinaryOp::Plus:
             return Operation::ADD;

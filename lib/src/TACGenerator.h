@@ -18,7 +18,7 @@ namespace TACGenerator {
         ALLOCA
     };
 
-    using VarName = std::variant<expression::Identifier, std::string>;
+    using VarName = std::variant<expression::Identifier, std::string, Value>;
 
     struct Instruction {
         Operation op;
