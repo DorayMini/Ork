@@ -10,6 +10,8 @@
 #include <functional>
 #include <map>
 
+#include "tool.h"
+
 namespace ork {
     bool TACGenerator::Instruction::operator==(const Instruction &other) const {
         if (op != other.op) return false;
