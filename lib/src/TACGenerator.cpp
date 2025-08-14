@@ -7,9 +7,39 @@
 #include <variant>
 
 #include <typeinfo>
-#include <cxxabi.h>
 #include <functional>
 #include <map>
+
+bool TACGenerator::Instruction::operator==(const Instruction &other) const {
+    if (op != other.op) return false;
+
+    auto varDecl = [] (auto&& a, auto&& b) -> bool {
+        if (!a && !b) return true;
+        if (!a || !b) return false;
+
+        return std::visit( match {
+            [](expression::Identifier id0, expression::Identifier id1) -> bool {
+                return id0.equals(id1);
+            },
+            []<typename T0, typename T1>(T0&& t0, T1&& t1) -> bool {
+                using A = std::decay_t<T0>;
+                using B = std::decay_t<T1>;
+
+                if constexpr (std::is_same_v<A, B>) {
+                    return t0 == t1;
+                }
+                return false;
+            }
+        },
+        *a, *b);
+    };
+
+    bool arg1Equal = varDecl(arg1, other.arg1);
+    bool arg2Equal = varDecl(arg2, other.arg2);
+    bool resultEqual = varDecl(result, other.result);
+
+    return arg1Equal && arg2Equal && resultEqual;
+}
 
 std::unique_ptr<TACGenerator::VarName> TACGenerator::Generator::generate(std::unique_ptr<expression::Base> node) {
     if (auto i = dynamic_cast<expression::Identifier *>(node.get())) {

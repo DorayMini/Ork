@@ -25,6 +25,8 @@ namespace TACGenerator {
         std::unique_ptr<VarName> arg1;
         std::unique_ptr<VarName> arg2 = nullptr;
         std::unique_ptr<VarName> result;
+
+        bool operator==(const Instruction &other) const;
     };
 
     class Generator {
