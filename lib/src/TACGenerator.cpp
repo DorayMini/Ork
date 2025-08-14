@@ -33,10 +33,10 @@ std::unique_ptr<TACGenerator::VarName> TACGenerator::Generator::generate(std::un
                     using T1 = std::decay_t<decltype(a)>;
                     using T2 = std::decay_t<decltype(b)>;
                     std::map<Operation, std::function<Value(T1, T2)> > op{
-                        {Operation::ADD,  [](T1 x, T2 y){ return Value{x + y}; }},
-                        {Operation::SUB,  [](T1 x, T2 y){ return Value{x - y}; }},
-                        {Operation::MULT, [](T1 x, T2 y){ return Value{x * y}; }},
-                        {Operation::DIV,  [](T1 x, T2 y){ return Value{x / y}; }},
+                            {Operation::ADD, std::plus<T1>()},
+                            {Operation::SUB, std::minus<T1>()},
+                            {Operation::MULT, std::multiplies<T1>()},
+                            {Operation::DIV, std::divides<T1>()}
                     };
 
                     if (auto fun = op.find(g_op); fun != op.end()) {
