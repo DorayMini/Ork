@@ -68,6 +68,7 @@ namespace ork {
                     break;
                 case '\n':
                     line++;
+                    break;
                 case ';': tokens.emplace_back(token::SEMICOLON{}); break;
                 case ',': tokens.emplace_back(token::COMMA{});     break;
                 case '(': tokens.emplace_back(token::LPAR{});      break;
