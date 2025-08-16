@@ -6,33 +6,42 @@
 #include <map>
 #include <string>
 #include <array>
+#include <filesystem>
 
 #include "TACGenerator.h"
 
 namespace ork::codeGenerator {
-
     struct Register {
         std::string name;
-        std::optional<int> var_id = std::nullopt;
-        int start = 0;
-        int end = 0;
+        std::optional<int> var_id = std::nullopt; // live interval start
+        int liveIntervalEnd = 0;
     };
 
     class NASM {
     public:
         void generate(const std::vector<TACGenerator::Instruction> &insts);
+
     private:
         inline static std::vector<Register> registers{
             {"eax"}, {"ebx"}, {"ecx"}, {"edx"}
         };
-        std::optional<std::string> getVar(auto &&a);
-        std::optional<std::string> getValue(auto &&a);
-        static std::optional<Register*> allocateRegister();
-        static std::optional<Register*> findRegisterByVarId(int var_id);
+
+        static std::optional<std::string> getVar(const std::unique_ptr<TACGenerator::VarName> &a);
+
+        static std::optional<std::string> getValue(const std::unique_ptr<TACGenerator::VarName> &a);
+
+        static std::optional<Register *> allocateRegister();
+
+        static std::optional<Register *> findRegisterByVarId(int var_id);
+
+        std::variant<Register *, std::string> resolveOperand(const std::unique_ptr<TACGenerator::VarName> &arg);
+
+        Register *resolveByArg(const std::string &result_var /* getVar() string */,
+                               std::variant<Register *, std::string /* value */> arg);
 
         void liveIntervalsAnalysis(const std::vector<TACGenerator::Instruction> &insts);
 
-        std::map<std::string, std::pair<int, int>> liveInterval;
-
+        std::filesystem::path path;
+        std::map<std::string, std::pair<int, int> > liveInterval;
     };
 } // namespace ork::codeGenerator

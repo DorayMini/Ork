@@ -4,6 +4,8 @@
 
 #include "CodeGeneratorNASM.h"
 
+#include <variant>
+
 #include "instructionSelectionTable.h"
 #include "TACGenerator.h"
 #include "tool.h"
@@ -14,8 +16,7 @@ namespace ork::codeGenerator {
         liveIntervalsAnalysis(insts);
 
         std::vector<std::string> str;
-        for (size_t i = 0; i < insts.size(); ++i) {
-            auto &inst = insts[i];
+        for (const auto &inst: insts)
             switch (inst.op) {
                 case Operation::ALLOCA: {
                     auto str_result = getVar(inst.result);
@@ -24,57 +25,30 @@ namespace ork::codeGenerator {
                         throw std::runtime_error("NASM::generate: result variable not found in liveInterval");
                     }
 
-                    Register *reg = nullptr;
+                    auto arg = resolveOperand(inst.arg1);
+                    Register *result_reg = resolveByArg(*str_result, arg);
 
-                    if (auto str_arg = getVar(inst.arg1)) {
-                        auto f_result = liveInterval.find(*str_result);
-                        auto f_arg = liveInterval.find(*str_arg);
-
-                        if (f_arg == liveInterval.end() || f_result == liveInterval.end()) {
-                            throw std::runtime_error("NASM::generate: arg variable not found in liveInterval");
-                        }
-
-                        if (f_result->second.first == f_arg->second.second) {
-                            if (auto r = findRegisterByVarId(f_arg->second.first)) {
-                                (*r)->var_id = f_result->second.first;
-                                break;
-                            }
-                        }
-
-                        auto regOpt = allocateRegister();
-                        if (!regOpt)
-                            throw std::runtime_error(
-                                "NASM::generate: source register for argument variable not found");
-                        reg = regOpt.value();
-                        if (auto r = findRegisterByVarId(f_arg->second.first)) {
-                            str.push_back(fmt::format(fmt::runtime(instructionSelectionTable::NASM_REG[inst.op]),
-                                                      reg->name, (*r)->name));
-                        }
-                    } else {
-                        auto regOpt = allocateRegister();
-                        if (!regOpt) throw std::runtime_error("NASM::generate: no free register available for literal");
-                        reg = regOpt.value();
-
-                        if (auto v = getValue(inst.arg1)) {
-                            str.push_back(fmt::format(fmt::runtime(instructionSelectionTable::NASM_REG[inst.op]),
-                                                      reg->name, *v));
-                        } else {
-                            throw std::runtime_error("NASM::generate: literal value operand not found");
-                        }
+                    std::string arg_result;
+                    if (std::holds_alternative<Register *>(arg)) {
+                        arg_result = std::get<Register *>(arg)->name;
+                    } else if (std::holds_alternative<std::string>(arg)) {
+                        arg_result = std::get<std::string>(arg);
                     }
-                    break;
+                    str.emplace_back(fmt::format(
+                            fmt::runtime(instructionSelectionTable::NASM_REG[Operation::ALLOCA]),
+                            result_reg->name,
+                            arg_result)
+                    );
                 }
-
                 default:
                     break;
             }
-        }
         for (auto s: str) {
             fmt::println("{}", s);
         }
     }
 
-    void NASM::liveIntervalsAnalysis(const std::vector<Instruction>& insts) {
+    void NASM::liveIntervalsAnalysis(const std::vector<Instruction> &insts) {
         auto updateInterval = [&](const std::optional<std::string> &var, size_t index) {
             if (!var) return;
             auto it = liveInterval.find(*var);
@@ -110,7 +84,67 @@ namespace ork::codeGenerator {
         return std::nullopt;
     }
 
-    std::optional<std::string> NASM::getVar(auto &&a) {
+    std::variant<Register *, std::string> NASM::resolveOperand(const std::unique_ptr<VarName>& arg) {
+        if (auto str_arg = getVar(arg)) {
+            auto f_arg = liveInterval.find(*str_arg);
+
+            if (f_arg == liveInterval.end()) {
+                throw std::runtime_error("NASM::generate: arg variable not found in liveInterval");
+            }
+
+            if (auto r = findRegisterByVarId(f_arg->second.first)) {
+                return *r;
+            }
+
+            throw std::runtime_error("NASM::resolveOperand: register for variable not allocated");
+        }
+        if (auto v = getValue(arg)) {
+            return *v;
+        }
+        throw std::runtime_error("NASM::generate: literal value operand not found");
+    }
+
+    Register *NASM::resolveByArg(const std::string &result_var, std::variant<Register *, std::string> arg) {
+        auto it = liveInterval.find(result_var);
+
+        if (it == liveInterval.end()) {
+            throw std::runtime_error("NASM::generate: arg variable not found in liveInterval");
+        }
+
+        auto [start, end] = it->second;
+
+        std::optional<Register *> result_reg = std::visit(
+            match{
+                [start, end](Register *reg) -> std::optional<Register *> {
+                    if (reg && reg->liveIntervalEnd == start) {
+                        reg->var_id = start;
+                        reg->liveIntervalEnd = end;
+                        return reg;
+                    }
+
+                    return std::nullopt;
+                },
+                [](auto &&) -> std::optional<Register *> {
+                    // std::string ...
+                    return std::nullopt;
+                },
+            }, arg);
+
+        if (!result_reg) {
+            auto optReg = allocateRegister();
+            if (!optReg) {
+                throw std::runtime_error("NASM::resolveRegisterByVar: no free register available");
+            }
+
+            Register *final_reg = *optReg;
+            final_reg->var_id = start;
+            final_reg->liveIntervalEnd = end;
+            return final_reg;
+        }
+        return *result_reg;
+    }
+
+    std::optional<std::string> NASM::getVar(const std::unique_ptr<VarName> &a) {
         if (!a) return std::nullopt;
         return std::visit(
             match{
@@ -120,7 +154,7 @@ namespace ork::codeGenerator {
             }, *a);
     }
 
-    std::optional<std::string> NASM::getValue(auto &&a) {
+    std::optional<std::string> NASM::getValue(const std::unique_ptr<VarName> &a) {
         if (!a) return std::nullopt;
 
         return std::visit(
