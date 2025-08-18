@@ -77,3 +77,24 @@ TEST(Parser, Case4) {
     bool equal = parsed->equals(expected);
     EXPECT_TRUE(equal);
 }
+
+TEST(Parser, FUNC_CASE1) {
+    std::vector t(lexer::proccess("fn main() { int a = 2; int b = 4;}"));
+    parser p{std::span(t)};
+    std::vector<std::unique_ptr<expression::Base>> body;
+
+    body.push_back(std::make_unique<expression::Variable>(
+        expression::VarType::Int,
+        std::make_unique<expression::Identifier>("a"),
+        std::make_unique<expression::Constant>(2)
+    ));
+
+    expression::FunctionDecl expected(
+        std::make_unique<expression::Identifier>("main"),
+        std::move(body)
+    );
+
+    auto parsed = p.parse();
+    bool equal = parsed->equals(expected);
+    EXPECT_TRUE(equal);
+}

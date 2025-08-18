@@ -9,9 +9,18 @@
 
 #include "fmt/format.h"
 #include "expression.h"
+#include "token.h"
 
 namespace ork {
     std::unique_ptr<expression::Base> parser::parse() {
+        if (std::holds_alternative<lexer::token::KEYWORD>(peek())) {
+            switch (std::get<lexer::token::KEYWORD>(take())) {
+                case lexer::token::KEYWORD::FN:
+                    return parseFunctionDecl();
+                default:
+                    throw std::runtime_error("unrecognized keyword");
+            }
+        }
         if (std::holds_alternative<lexer::token::TYPE>(peek())) {
             return parseVariable();
         }
@@ -25,19 +34,17 @@ namespace ork {
                     return std::make_unique<expression::Constant>(expression::Constant(token.value));
                 },
                 [](auto &&) -> std::unique_ptr<expression::Base> {
-                    throw std::runtime_error(fmt::format("Unexpected token. Expected binary operator"));
+                    throw std::runtime_error(fmt::format("Expected integer"));
                 }
             },
             take());
 
-        if (tokens_.empty()) {
-            return lhs;
-        }
-        if (std::holds_alternative<lexer::token::SEMICOLON>(peek())) {
-            return lhs;
-        }
-
         for (;;) {
+            if (tokens_.empty() || std::holds_alternative<lexer::token::SEMICOLON>(peek())) {
+                break;
+            }
+
+            auto test = peek();
             auto [rightBindingPower, op] = std::visit(
                 match{
                     [](lexer::token::PLUS) -> std::tuple<int, expression::BinaryOp> {
@@ -52,8 +59,8 @@ namespace ork {
                     [](lexer::token::SLASH) -> std::tuple<int, expression::BinaryOp> {
                         return {2, expression::BinaryOp::Slash};
                     },
-                    [](auto &&) -> std::tuple<int, expression::BinaryOp> {
-                        throw std::runtime_error(fmt::format("TODO: error"));
+                    [](auto &&token) -> std::tuple<int, expression::BinaryOp> {
+                        throw std::runtime_error(fmt::format("Unexpected token '{}'. Expected binary operator.", typeid(token).name()));
                     }
                 },
                 peek());
@@ -66,13 +73,11 @@ namespace ork {
             auto rhs = parseExpression(rightBindingPower);
 
             lhs = std::make_unique<expression::Binary>(op, std::move(lhs), std::move(rhs));
+        }
 
-            if (tokens_.empty()) {
-                break;
-            }
-            if (std::holds_alternative<lexer::token::SEMICOLON>(peek())) {
-                break;
-            }
+
+        if (!tokens_.empty() && std::holds_alternative<lexer::token::SEMICOLON>(peek())) {
+            take();
         }
 
         return lhs;
@@ -89,7 +94,7 @@ namespace ork {
                     }
                 },
                 [](auto &&) -> expression::VarType {
-                    throw std::runtime_error(fmt::format("Unexpected token. Expected variable type"));
+                    throw std::runtime_error("Unexpected token. Expected variable type");
                 }
             },
             take()
@@ -100,16 +105,14 @@ namespace ork {
                     return std::make_unique<expression::Identifier>(fmt::to_string(token.value));
                 },
                 [](auto &&) -> std::unique_ptr<expression::Identifier> {
-                    throw std::runtime_error(fmt::format("Unexpected token."));
+                    throw std::runtime_error("Unexpected token.");
                 }
             },
             take()
         );
 
-        if (std::holds_alternative<lexer::token::EQUAL>(peek())) {
-            take();
-        } else {
-            throw std::runtime_error(fmt::format("Unexpected token. Expected assignment operator '='"));
+        if (!std::holds_alternative<lexer::token::EQUAL>(take())) {
+            throw std::runtime_error("Unexpected token. Expected assignment operator '='");
         }
 
         auto rhs = parseExpression();
@@ -119,5 +122,51 @@ namespace ork {
             std::move(lhs),
             std::move(rhs)
         );
+    }
+
+    std::unique_ptr<expression::FunctionDecl> parser::parseFunctionDecl() {
+        auto name = std::visit(
+            match{
+                [](lexer::token::IDENTIFIER id) -> std::unique_ptr<expression::Identifier> {
+                    return std::make_unique<expression::Identifier>(fmt::to_string(id.value));
+                },
+                [](auto &&) -> std::unique_ptr<expression::Identifier> {
+                    throw std::runtime_error("parseFunctionDecl: expected function name (identifier)");
+                }
+            },
+            take());
+
+        if (!std::holds_alternative<lexer::token::LPAR>(take())) {
+            throw std::runtime_error("parseFunctionDecl: expected '(' after function name");
+        }
+        if (!std::holds_alternative<lexer::token::RPAR>(take())) {
+            throw std::runtime_error("parseFunctionDecl: expected ')' after '('");
+        }
+
+
+        if (std::holds_alternative<lexer::token::LBRACE>(take())) {
+            auto fun = std::make_unique<expression::FunctionDecl>(std::move(name));
+            while (!std::holds_alternative<lexer::token::RBRACE>(peek())) {
+                if (tokens_.empty()) {
+                    throw std::runtime_error("parseFunctionDecl: unexpected end of tokens while parsing body");
+                }
+
+                auto expr = parse();
+
+                if (!expr) {
+                    throw std::runtime_error("parseFunctionDecl: failed to parse expression in function body");
+                }
+
+                fun->body.emplace_back(std::move(expr));
+                if (!tokens_.empty() && std::holds_alternative<lexer::token::SEMICOLON>(peek())) {
+                    take();
+                }
+            }
+
+            take();
+            return fun;
+        } else {
+            throw std::runtime_error("parseFunctionDecl: expected '{' to start function body");
+        }
     }
 } // namespace ork

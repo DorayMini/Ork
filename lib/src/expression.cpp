@@ -5,16 +5,16 @@
 
 
 namespace ork::expression {
-    bool Constant::equals(const Base& other) const {
-        auto otherConstant = dynamic_cast<const Constant*>(&other);
+    bool Constant::equals(const Base &other) const {
+        auto otherConstant = dynamic_cast<const Constant *>(&other);
         if (!otherConstant) {
             return false;
         }
         return value == otherConstant->value;
     }
 
-    bool Binary::equals(const Base& other) const {
-        auto otherB = dynamic_cast<const Binary*>(&other);
+    bool Binary::equals(const Base &other) const {
+        auto otherB = dynamic_cast<const Binary *>(&other);
         if (!otherB) {
             return false;
         }
@@ -25,8 +25,8 @@ namespace ork::expression {
 
         bool lhsEqual = false;
 
-        if (auto lhsBase = dynamic_cast<const Base*>(lhs.get())) {
-            if (auto otherBase = dynamic_cast<const Base*>(otherB->lhs.get())) {
+        if (auto lhsBase = dynamic_cast<const Base *>(lhs.get())) {
+            if (auto otherBase = dynamic_cast<const Base *>(otherB->lhs.get())) {
                 lhsEqual = lhsBase->equals(*otherBase);
             }
         } else
@@ -34,8 +34,8 @@ namespace ork::expression {
 
         bool rhsEqual = false;
 
-        if (auto rhsBase = dynamic_cast<const Base*>(rhs.get())) {
-            if (auto otherBase = dynamic_cast<const Base*>(otherB->rhs.get())) {
+        if (auto rhsBase = dynamic_cast<const Base *>(rhs.get())) {
+            if (auto otherBase = dynamic_cast<const Base *>(otherB->rhs.get())) {
                 rhsEqual = rhsBase->equals(*otherBase);
             }
         } else
@@ -45,7 +45,7 @@ namespace ork::expression {
     }
 
     bool Identifier::equals(const Base &other) const {
-        auto otherIdentifier = dynamic_cast<const Identifier*>(&other);
+        auto otherIdentifier = dynamic_cast<const Identifier *>(&other);
         if (!otherIdentifier) {
             return false;
         }
@@ -53,7 +53,7 @@ namespace ork::expression {
     }
 
     bool Variable::equals(const Base &other) const {
-        auto otherVariable = dynamic_cast<const Variable*>(&other);
+        auto otherVariable = dynamic_cast<const Variable *>(&other);
         if (!otherVariable) {
             return false;
         }
@@ -70,5 +70,35 @@ namespace ork::expression {
             }
         }
         return lhsEqual && rhsEqual;
+    }
+
+    bool FunctionDecl::equals(const Base &other) const {
+        auto otherFunc = dynamic_cast<const FunctionDecl *>(&other);
+        if (!otherFunc) {
+            return false;
+        }
+
+        if (!name->equals(*otherFunc->name)) {
+            return false;
+        }
+
+        if (returnType != otherFunc->returnType) {
+            return false;
+        }
+
+        if (arguments.size() != otherFunc->arguments.size() ||
+            body.size() != otherFunc->body.size()) {
+            return false;
+            }
+
+        for (size_t i = 0; i < arguments.size(); ++i) {
+            if (!arguments[i]->equals(*otherFunc->arguments[i])) return false;
+        }
+
+        for (size_t i = 0; i < body.size(); ++i) {
+            if (!body[i]->equals(*otherFunc->body[i])) return false;
+        }
+
+        return true;
     }
 } // namespace ork::expression

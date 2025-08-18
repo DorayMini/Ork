@@ -20,6 +20,7 @@ namespace ork {
 
           std::unique_ptr<expression::Base> parseExpression(int leftBindingPower = 0);
           std::unique_ptr<expression::Variable> parseVariable();
+          std::unique_ptr<expression::FunctionDecl> parseFunctionDecl();
 
           [[nodiscard]] const lexer::token::Lexem& peek() const {
                return tokens_.front();
