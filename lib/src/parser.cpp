@@ -27,6 +27,12 @@ namespace ork {
         return parseExpression();
     }
 
+    bool parser::isAtStatementTerminator(int leftBindingPower) {
+        return !tokens_.empty()
+               && std::holds_alternative<lexer::token::SEMICOLON>(peek())
+               && leftBindingPower == 0;
+    }
+
     std::unique_ptr<expression::Base> parser::parseExpression(int leftBindingPower) {
         auto lhs = std::visit(
             match{
@@ -44,7 +50,6 @@ namespace ork {
                 break;
             }
 
-            auto test = peek();
             auto [rightBindingPower, op] = std::visit(
                 match{
                     [](lexer::token::PLUS) -> std::tuple<int, expression::BinaryOp> {
@@ -59,8 +64,10 @@ namespace ork {
                     [](lexer::token::SLASH) -> std::tuple<int, expression::BinaryOp> {
                         return {2, expression::BinaryOp::Slash};
                     },
-                    [](auto &&token) -> std::tuple<int, expression::BinaryOp> {
-                        throw std::runtime_error(fmt::format("Unexpected token '{}'. Expected binary operator.", typeid(token).name()));
+                    [&](auto &&token) -> std::tuple<int, expression::BinaryOp> {
+                        auto test = peek();
+                        throw std::runtime_error(fmt::format("Unexpected token '{}'. Expected binary operator.",
+                                                             typeid(token).name()));
                     }
                 },
                 peek());
@@ -69,6 +76,7 @@ namespace ork {
             if (rightBindingPower < leftBindingPower) {
                 return lhs;
             }
+
             take();
             auto rhs = parseExpression(rightBindingPower);
 
@@ -76,7 +84,7 @@ namespace ork {
         }
 
 
-        if (!tokens_.empty() && std::holds_alternative<lexer::token::SEMICOLON>(peek())) {
+        if (isAtStatementTerminator(leftBindingPower)) {
             take();
         }
 

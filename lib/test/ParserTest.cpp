@@ -89,6 +89,12 @@ TEST(Parser, FUNC_CASE1) {
         std::make_unique<expression::Constant>(2)
     ));
 
+    body.push_back(std::make_unique<expression::Variable>(
+        expression::VarType::Int,
+        std::make_unique<expression::Identifier>("b"),
+        std::make_unique<expression::Constant>(4)
+    ));
+
     expression::FunctionDecl expected(
         std::make_unique<expression::Identifier>("main"),
         std::move(body)
