@@ -3,6 +3,7 @@
 //
 
 #pragma once
+#include <unordered_set>
 #include <vector>
 
 #include "expression.h"
@@ -32,15 +33,16 @@ namespace ork::TACGenerator {
 
     class Generator {
     public:
-        std::unique_ptr<VarName> generate(std::unique_ptr<expression::Base> node);
-
+        void proccess(std::vector<std::unique_ptr<expression::Base>> nodes);
         std::vector<Instruction> takeInstructions();
 
     private:
+        std::unique_ptr<VarName> generate(std::unique_ptr<expression::Base> node);
         static Operation getOperation(const expression::BinaryOp &node);
         static std::optional<std::unique_ptr<VarName>> foldVariable(const Operation& op, const VarName& val1, const VarName& val2);
 
         std::vector<Instruction> instructions;
         unsigned int counter = 0;
+        std::unordered_set<std::string> functionNames;
     };
 } // namespace ork::TACGenerator

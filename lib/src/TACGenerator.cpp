@@ -44,6 +44,16 @@ namespace ork {
         return arg1Equal && arg2Equal && resultEqual;
     }
 
+    void TACGenerator::Generator::proccess(std::vector<std::unique_ptr<expression::Base>> nodes) {
+        for (auto& node: nodes) {
+            generate(std::move(node));
+        }
+        if (functionNames.find("main") == functionNames.end()) {
+            throw std::runtime_error("Program must define a main function");
+        }
+
+    }
+
     std::unique_ptr<TACGenerator::VarName> TACGenerator::Generator::generate(std::unique_ptr<expression::Base> node) {
         if (auto i = dynamic_cast<expression::Identifier *>(node.get())) {
             return std::make_unique<VarName>(i->name);
@@ -60,6 +70,8 @@ namespace ork {
                 .op = Operation::FUNC_START,
                 .result =  std::make_unique<VarName>(fun->name->name),
             }));
+
+            functionNames.emplace(fun->name->name);
 
             for (auto &body : fun->body) {
                 generate(std::move(body));
