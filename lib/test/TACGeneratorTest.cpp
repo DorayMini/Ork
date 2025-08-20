@@ -13,7 +13,9 @@ TEST(TECGenerator, Case1) {
     std::vector t(lexer::proccess("fn main() {int a = 2 + 2;}"));
     parser p{std::span(t)};
     TACGenerator::Generator g;
-    g.generate(p.parse());
+
+
+    g.proccess(std::move(p.parse()));
     auto instr = g.takeInstructions();
 
     std::vector<TACGenerator::Instruction> expected;

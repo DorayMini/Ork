@@ -14,11 +14,13 @@ namespace ork {
      public:
           explicit parser(std::span<lexer::token::Lexem> tokens) : tokens_(tokens) {}
 
-          std::unique_ptr<expression::Base> parse();
+          std::vector<std::unique_ptr<expression::Base>> parse();
      private:
           std::span<lexer::token::Lexem> tokens_;
 
-          bool isAtStatementTerminator(int leftBindingPower);
+          std::unique_ptr<expression::Base> parseCodeBlock();
+
+          bool isAtStatementTerminator(int leftBindingPower) const;
           std::unique_ptr<expression::Base> parseExpression(int leftBindingPower = 0);
           std::unique_ptr<expression::Variable> parseVariable();
           std::unique_ptr<expression::FunctionDecl> parseFunctionDecl();

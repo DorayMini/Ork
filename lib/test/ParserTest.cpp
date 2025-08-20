@@ -24,7 +24,7 @@ TEST(Parser, Case1) {
     );
 
     auto parsed = p.parse();
-    bool equal = parsed->equals(expected);
+    bool equal = parsed[0]->equals(expected);
     EXPECT_TRUE(equal);
 }
 
@@ -42,7 +42,7 @@ TEST(Parser, Case2) {
     );
 
     auto parsed = p.parse();
-    bool equal = parsed->equals(expected);
+    bool equal = parsed[0]->equals(expected);
     EXPECT_TRUE(equal);
 }
 
@@ -56,7 +56,7 @@ TEST(Parser, Case3) {
     );
 
     auto parsed = p.parse();
-    bool equal = parsed->equals(expected);
+    bool equal = parsed[0]->equals(expected);
     EXPECT_TRUE(equal);
 }
 
@@ -74,7 +74,8 @@ TEST(Parser, Case4) {
     );
 
     auto parsed = p.parse();
-    bool equal = parsed->equals(expected);
+
+    bool equal = parsed[0]->equals(expected);
     EXPECT_TRUE(equal);
 }
 
@@ -101,6 +102,6 @@ TEST(Parser, FUNC_CASE1) {
     );
 
     auto parsed = p.parse();
-    bool equal = parsed->equals(expected);
+    bool equal = parsed[0]->equals(expected);
     EXPECT_TRUE(equal);
 }

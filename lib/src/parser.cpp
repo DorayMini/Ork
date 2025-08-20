@@ -12,7 +12,17 @@
 #include "token.h"
 
 namespace ork {
-    std::unique_ptr<expression::Base> parser::parse() {
+    std::vector<std::unique_ptr<expression::Base>> parser::parse() {
+        std::vector<std::unique_ptr<expression::Base>> result;
+
+        while (!tokens_.empty()) {
+            result.emplace_back(std::move(parseCodeBlock()));
+        }
+
+        return result;
+    }
+
+    std::unique_ptr<expression::Base> parser::parseCodeBlock() {
         if (std::holds_alternative<lexer::token::KEYWORD>(peek())) {
             switch (std::get<lexer::token::KEYWORD>(take())) {
                 case lexer::token::KEYWORD::FN:
@@ -27,7 +37,7 @@ namespace ork {
         return parseExpression();
     }
 
-    bool parser::isAtStatementTerminator(int leftBindingPower) {
+    bool parser::isAtStatementTerminator(int leftBindingPower) const {
         return !tokens_.empty()
                && std::holds_alternative<lexer::token::SEMICOLON>(peek())
                && leftBindingPower == 0;
@@ -45,11 +55,7 @@ namespace ork {
             },
             take());
 
-        for (;;) {
-            if (tokens_.empty() || std::holds_alternative<lexer::token::SEMICOLON>(peek())) {
-                break;
-            }
-
+        while (!(tokens_.empty() || std::holds_alternative<lexer::token::SEMICOLON>(peek()))) {
             auto [rightBindingPower, op] = std::visit(
                 match{
                     [](lexer::token::PLUS) -> std::tuple<int, expression::BinaryOp> {
@@ -64,8 +70,7 @@ namespace ork {
                     [](lexer::token::SLASH) -> std::tuple<int, expression::BinaryOp> {
                         return {2, expression::BinaryOp::Slash};
                     },
-                    [&](auto &&token) -> std::tuple<int, expression::BinaryOp> {
-                        auto test = peek();
+                    []([[maybe_unused]] auto &&token) -> std::tuple<int, expression::BinaryOp> {
                         throw std::runtime_error(fmt::format("Unexpected token '{}'. Expected binary operator.",
                                                              typeid(token).name()));
                     }
@@ -98,7 +103,8 @@ namespace ork {
                     switch (type) {
                         case lexer::token::TYPE::INTEGER:
                             return expression::VarType::Int;
-                        default: break;
+                        default:
+                            throw std::runtime_error("unrecognized variable type");
                     }
                 },
                 [](auto &&) -> expression::VarType {
@@ -159,7 +165,7 @@ namespace ork {
                     throw std::runtime_error("parseFunctionDecl: unexpected end of tokens while parsing body");
                 }
 
-                auto expr = parse();
+                auto expr = parseCodeBlock();
 
                 if (!expr) {
                     throw std::runtime_error("parseFunctionDecl: failed to parse expression in function body");
