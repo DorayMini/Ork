@@ -16,25 +16,25 @@ namespace ork {
     bool TACGenerator::Instruction::operator==(const Instruction &other) const {
         if (op != other.op) return false;
 
-        auto varDecl = [] (auto&& a, auto&& b) -> bool {
+        auto varDecl = [](auto &&a, auto &&b) -> bool {
             if (!a && !b) return true;
             if (!a || !b) return false;
 
-            return std::visit( match {
-                [](expression::Identifier id0, expression::Identifier id1) -> bool {
-                    return id0.equals(id1);
-                },
-                []<typename T0, typename T1>(T0&& t0, T1&& t1) -> bool {
-                    using A = std::decay_t<T0>;
-                    using B = std::decay_t<T1>;
+            return std::visit(match{
+                                  [](expression::Identifier id0, expression::Identifier id1) -> bool {
+                                      return id0.equals(id1);
+                                  },
+                                  []<typename T0, typename T1>(T0 &&t0, T1 &&t1) -> bool {
+                                      using A = std::decay_t<T0>;
+                                      using B = std::decay_t<T1>;
 
-                    if constexpr (std::is_same_v<A, B>) {
-                        return t0 == t1;
-                    }
-                    return false;
-                }
-            },
-            *a, *b);
+                                      if constexpr (std::is_same_v<A, B>) {
+                                          return t0 == t1;
+                                      }
+                                      return false;
+                                  }
+                              },
+                              *a, *b);
         };
 
         bool arg1Equal = varDecl(arg1, other.arg1);
@@ -46,7 +46,7 @@ namespace ork {
 
     std::unique_ptr<TACGenerator::VarName> TACGenerator::Generator::generate(std::unique_ptr<expression::Base> node) {
         if (auto i = dynamic_cast<expression::Identifier *>(node.get())) {
-            return std::make_unique<VarName>(*i);
+            return std::make_unique<VarName>(i->name);
         }
         if (auto c = dynamic_cast<expression::Constant *>(node.get())) {
             if (std::holds_alternative<int32_t>(c->value)) {
@@ -55,30 +55,30 @@ namespace ork {
             }
         }
 
+        if (auto fun = dynamic_cast<expression::FunctionDecl *>(node.get())) {
+            instructions.push_back(std::move(Instruction{
+                .op = Operation::FUNC_START,
+                .result =  std::make_unique<VarName>(fun->name->name),
+            }));
+
+            for (auto &body : fun->body) {
+                generate(std::move(body));
+            }
+
+            instructions.push_back(std::move(Instruction{
+                .op = Operation::FUNC_END,
+                .result =  std::make_unique<VarName>(fun->name->name),
+            }));
+
+            return std::make_unique<VarName>(fun->name->name);
+        }
         if (auto b = dynamic_cast<expression::Binary *>(node.get())) {
             auto g_op = getOperation(b->op);
             auto g_arg1 = generate(std::move(b->lhs));
             auto g_arg2 = generate(std::move(b->rhs));
 
-            if (std::holds_alternative<Value>(*g_arg1)) {
-                if (std::holds_alternative<Value>(*g_arg2)) {
-                    return std::make_unique<VarName>(std::visit([&](auto &&a, auto &&b) -> Value {
-                        using T1 = std::decay_t<decltype(a)>;
-                        using T2 = std::decay_t<decltype(b)>;
-                        std::map<Operation, std::function<Value(T1, T2)> > op{
-                                {Operation::ADD, std::plus<T1>()},
-                                {Operation::SUB, std::minus<T1>()},
-                                {Operation::MULT, std::multiplies<T1>()},
-                                {Operation::DIV, std::divides<T1>()}
-                        };
-
-                        if (auto fun = op.find(g_op); fun != op.end()) {
-                            return fun->second(a, b);
-                        }
-
-                        return Value{};
-                    }, std::get<Value>(*g_arg1), std::get<Value>(*g_arg2)));
-                }
+            if (auto fold = foldVariable(g_op, *g_arg1, *g_arg2)) {
+                return std::move(*fold);
             }
 
             std::string result = fmt::format("f{}", counter++);
@@ -88,17 +88,16 @@ namespace ork {
                 .arg2 = std::move(g_arg2),
                 .result = std::make_unique<VarName>(result)
             }));
-            fmt::println("{}", result);
             return std::make_unique<VarName>(result);
         }
         if (auto var = dynamic_cast<expression::Variable *>(node.get())) {
             instructions.push_back(std::move(Instruction{
                 .op = Operation::ALLOCA,
                 .arg1 = generate(std::move(var->value)),
-                .result = std::make_unique<VarName>(*var->name)
+                .result = std::make_unique<VarName>(var->name->name)
             }));
 
-            return std::make_unique<VarName>(*var->name);
+            return std::make_unique<VarName>(var->name->name);
         }
 
         throw std::runtime_error(fmt::format("TACGenerator -> Unknown node type {}", typeid(*node).name()));
@@ -121,5 +120,30 @@ namespace ork {
             default:
                 throw std::runtime_error("TACgenerator -> Unknown operation type");
         }
+    }
+
+    std::optional<std::unique_ptr<TACGenerator::VarName>> TACGenerator::Generator::foldVariable(const Operation& op, const VarName& val1, const VarName& val2) {
+        if (std::holds_alternative<Value>(val1)) {
+            if (std::holds_alternative<Value>(val2)) {
+                return std::make_unique<VarName>(std::visit([&](auto &&a, auto &&b) -> Value {
+                    using T1 = std::decay_t<decltype(a)>;
+                    using T2 = std::decay_t<decltype(b)>;
+                    std::map<Operation, std::function<Value(T1, T2)> > operation{
+                        {Operation::ADD, std::plus<T1>()},
+                        {Operation::SUB, std::minus<T1>()},
+                        {Operation::MULT, std::multiplies<T1>()},
+                        {Operation::DIV, std::divides<T1>()}
+                    };
+
+                    if (auto fun = operation.find(op); fun != operation.end()) {
+                        return fun->second(a, b);
+                    }
+
+                    return Value{};
+                }, std::get<Value>(val1), std::get<Value>(val2)));
+            }
+        }
+
+        return std::nullopt;
     }
 } // nanamespace ork

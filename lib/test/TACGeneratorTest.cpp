@@ -10,7 +10,7 @@
 using namespace ork;
 
 TEST(TECGenerator, Case1) {
-    std::vector t(lexer::proccess("int a = 2 + 2;"));
+    std::vector t(lexer::proccess("fn main() {int a = 2 + 2;}"));
     parser p{std::span(t)};
     TACGenerator::Generator g;
     g.generate(p.parse());
@@ -19,9 +19,23 @@ TEST(TECGenerator, Case1) {
     std::vector<TACGenerator::Instruction> expected;
     expected.emplace_back(
         TACGenerator::Instruction{
+            .op = TACGenerator::Operation::FUNC_START,
+            .result = std::make_unique<TACGenerator::VarName>("main")
+        }
+    );
+
+    expected.emplace_back(
+        TACGenerator::Instruction{
             .op = TACGenerator::Operation::ALLOCA,
             .arg1 = std::make_unique<TACGenerator::VarName>(4),
-            .result = std::make_unique<TACGenerator::VarName>(expression::Identifier("a"))
+            .result = std::make_unique<TACGenerator::VarName>("a")
+        }
+    );
+
+    expected.emplace_back(
+        TACGenerator::Instruction{
+            .op = TACGenerator::Operation::FUNC_END,
+            .result = std::make_unique<TACGenerator::VarName>("main")
         }
     );
 

@@ -14,14 +14,16 @@ namespace ork::TACGenerator {
         SUB,
         MULT,
         DIV,
-        ALLOCA
+        ALLOCA,
+        FUNC_START,
+        FUNC_END,
     };
 
-    using VarName = std::variant<expression::Identifier, std::string, Value>;
+    using VarName = std::variant<std::string, Value>;
 
     struct Instruction {
         Operation op;
-        std::unique_ptr<VarName> arg1;
+        std::unique_ptr<VarName> arg1 = nullptr;
         std::unique_ptr<VarName> arg2 = nullptr;
         std::unique_ptr<VarName> result;
 
@@ -36,6 +38,7 @@ namespace ork::TACGenerator {
 
     private:
         static Operation getOperation(const expression::BinaryOp &node);
+        static std::optional<std::unique_ptr<VarName>> foldVariable(const Operation& op, const VarName& val1, const VarName& val2);
 
         std::vector<Instruction> instructions;
         unsigned int counter = 0;
