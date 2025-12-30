@@ -48,7 +48,7 @@ namespace ork::codeGenerator {
     void NASM::generateFuncNasm(std::vector<Instruction>::const_iterator begin, std::vector<Instruction>::const_iterator end) {
         for (auto inst = begin; inst <= end; ++inst) {
             switch (inst->op) {
-                case Operation::FUNC_START:
+                case Operation::FUNC_START: {
                     nasmCode.push_back(
                         fmt::format(
                             fmt::runtime(instructionSelectionTable::NASM_REG[inst->op]),
@@ -56,12 +56,18 @@ namespace ork::codeGenerator {
                         )
                     );
 
+                    auto stackInit = formatStackInitialization();
+                    nasmCode.insert(nasmCode.end(), stackInit.begin(), stackInit.end());
                     break;
-                case Operation::FUNC_END:
+                }
+                case Operation::FUNC_END: {
+                    auto stackFinalization = formatStackFinalization();
+                    nasmCode.insert(nasmCode.end(), stackFinalization.begin(), stackFinalization.end());
                     nasmCode.push_back(
                         instructionSelectionTable::NASM_REG[inst->op]
                     );
                     break;
+                }
                 case Operation::ALLOCA:
                     std::string resultLoc = formatLocation(findLocation(getOperand(inst->result).value()).value());
                     if (getNumOperand(inst->arg1).has_value()) {
@@ -171,8 +177,22 @@ namespace ork::codeGenerator {
         }
     }
 
-    std::string NASM::formatStackInitialization() {
+    std::vector<std::string> NASM::formatStackInitialization() {
+        std::vector<std::string> result;
+        result.emplace_back("push ebp\n");
+        result.emplace_back("mov ebp, esp\n");
+        int stack_size = (stack.offset / 16 + 1) * 16;
+        result.push_back(fmt::format("sub esp, {}\n", stack_size));
 
+        return result;
+    }
+
+    std::vector<std::string> NASM::formatStackFinalization() {
+        std::vector<std::string> result;
+        result.emplace_back("mov esp, ebp\n");
+        result.emplace_back("pop ebp\n");
+
+        return result;
     }
 
     int NASM::allocateStack(const std::string &var, int align, size_t index) {
