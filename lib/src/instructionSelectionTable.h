@@ -15,5 +15,7 @@ namespace ork::codeGenerator::instructionSelectionTable {
         {Operation::SUB, "sub {}, {}\n"},
         {Operation::MULT, "imul {}, {}\n"},
         {Operation::DIV, "idiv {}, {}\n"},
+        {Operation::FUNC_START, "{}:\n"},
+        {Operation::FUNC_END, "ret\n"}
     };
 } // namespace ork::codeGenerator

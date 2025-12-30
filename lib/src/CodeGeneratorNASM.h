@@ -1,47 +1,74 @@
 //
 // Created by doray on 8/14/25.
 //
-
 #pragma once
+
 #include <map>
+#include <unordered_map>
 #include <string>
-#include <array>
-#include <filesystem>
 
 #include "TACGenerator.h"
 
+
 namespace ork::codeGenerator {
-    struct Register {
-        std::string name;
-        std::optional<int> var_id = std::nullopt; // live interval start
-        int liveIntervalEnd = 0;
+    struct StackFrame {
+        int offset = 0;
+    };
+
+    struct Location {
+        enum { REG, STACK } kind;
+        std::string reg;
+        int offset;
+
+        static Location regLoc(std::string reg) {
+            return Location {REG, std::move(reg), 0};
+        }
+
+        static Location stackLoc(const int off) {
+            return Location {STACK, "", off};
+        }
     };
 
     class NASM {
     public:
-        void generate(const std::vector<TACGenerator::Instruction> &insts);
-
+        [[nodiscard]] std::vector<std::string> generate(const std::vector<TACGenerator::Instruction> &insts);
     private:
-        inline static std::vector<Register> registers{
-            {"eax"}, {"ebx"}, {"ecx"}, {"edx"}
+        void generateFuncNasm(std::vector<TACGenerator::Instruction>::const_iterator begin, std::vector<TACGenerator::Instruction>::const_iterator end);
+
+        static void liveIntervalsAnalysis(const std::vector<TACGenerator::Instruction> &insts);
+        static std::optional<std::string> getOperand(const std::unique_ptr<TACGenerator::Operand> &a);
+        static std::optional<int32_t> getNumOperand(const std::unique_ptr<TACGenerator::Operand> &a);
+        static std::optional<std::string> allocateReg(const std::string &var, size_t index);
+        static std::optional<Location> findLocation(const std::string &var);
+        std::string formatLocation(const Location &loc);
+        std::string formatStackInitialization();
+        static int allocateStack(const std::string &var, int align, size_t index);
+
+        static void freeReg(size_t index);
+
+        static bool hasFreeRegister();
+
+        inline static std::map<std::string, std::pair<int, int>> liveInterval{};
+
+        inline static std::unordered_map<std::string, Location> varLocation{};
+
+
+        inline static std::map<std::string, bool> variableRegs{
+                {"eax", true},
+                {"ebx", true},
+                {"ecx", true},
+                {"edx", true}
         };
 
-        static std::optional<std::string> getVar(const std::unique_ptr<TACGenerator::VarName> &a);
+        static void freeAllReg();
 
-        static std::optional<std::string> getValue(const std::unique_ptr<TACGenerator::VarName> &a);
+        inline static StackFrame stack{};
 
-        static std::optional<Register *> allocateRegister();
+        std::vector<std::string> nasmCode = {
+            "section .text\n", "global _start\n", "_start:\n",
+            "    call main\n", "    mov eax, 1\n", "    mov ebx, 0\n",
+            "    int 0x80\n"
+        };
 
-        static std::optional<Register *> findRegisterByVarId(int var_id);
-
-        std::variant<Register *, std::string> resolveOperand(const std::unique_ptr<TACGenerator::VarName> &arg);
-
-        Register *resolveByArg(const std::string &result_var /* getVar() string */,
-                               std::variant<Register *, std::string /* value */> arg);
-
-        void liveIntervalsAnalysis(const std::vector<TACGenerator::Instruction> &insts);
-
-        std::filesystem::path path;
-        std::map<std::string, std::pair<int, int> > liveInterval;
     };
 } // namespace ork::codeGenerator
