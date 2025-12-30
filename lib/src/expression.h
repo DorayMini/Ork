@@ -23,8 +23,7 @@ namespace ork::expression {
     public:
         Value value;
 
-        explicit Constant(const Value &value) : value(value) {
-        }
+        explicit Constant(const Value &value) : value(value) {}
 
         ~Constant() override = default;
 
@@ -58,8 +57,7 @@ namespace ork::expression {
     public:
         std::string name;
 
-        explicit Identifier(const std::string &name) : name(name) {
-        }
+        explicit Identifier(const std::string &name) : name(name) {}
 
         ~Identifier() override = default;
 

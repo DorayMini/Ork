@@ -46,6 +46,9 @@ namespace ork {
     std::unique_ptr<expression::Base> parser::parseExpression(int leftBindingPower) {
         auto lhs = std::visit(
             match{
+                [](lexer::token::IDENTIFIER token) -> std::unique_ptr<expression::Base> {
+                    return std::make_unique<expression::Identifier>(expression::Identifier(fmt::to_string(token.value)));
+                },
                 [](lexer::token::INTEGER token) -> std::unique_ptr<expression::Base> {
                     return std::make_unique<expression::Constant>(expression::Constant(token.value));
                 },
