@@ -20,13 +20,13 @@ namespace ork::TACGenerator {
         FUNC_END,
     };
 
-    using VarName = std::variant<std::string, Value>;
+    using Operand = std::variant<std::string, Value>;
 
     struct Instruction {
         Operation op;
-        std::unique_ptr<VarName> arg1 = nullptr;
-        std::unique_ptr<VarName> arg2 = nullptr;
-        std::unique_ptr<VarName> result;
+        std::unique_ptr<Operand> arg1 = nullptr;
+        std::unique_ptr<Operand> arg2 = nullptr;
+        std::unique_ptr<Operand> result;
 
         bool operator==(const Instruction &other) const;
     };
@@ -37,9 +37,9 @@ namespace ork::TACGenerator {
         std::vector<Instruction> takeInstructions();
 
     private:
-        std::unique_ptr<VarName> generate(std::unique_ptr<expression::Base> node);
+        std::unique_ptr<Operand> generate(std::unique_ptr<expression::Base> node);
         static Operation getOperation(const expression::BinaryOp &node);
-        static std::optional<std::unique_ptr<VarName>> foldVariable(const Operation& op, const VarName& val1, const VarName& val2);
+        static std::optional<std::unique_ptr<Operand>> foldVariable(const Operation& op, const Operand& val1, const Operand& val2);
 
         std::vector<Instruction> instructions;
         unsigned int counter = 0;
