@@ -39,11 +39,11 @@ namespace ork::codeGenerator {
         static std::optional<std::string> getOperand(const std::unique_ptr<TACGenerator::Operand> &a);
         static std::optional<int32_t> getNumOperand(const std::unique_ptr<TACGenerator::Operand> &a);
         static std::optional<std::string> allocateReg(const std::string &var, size_t index);
+        static std::optional<int> allocateStack(const std::string &var, int align, size_t index);
         static std::optional<Location> findLocation(const std::string &var);
         static std::string formatLocation(const Location &loc);
         static std::vector<std::string> formatStackInitialization();
         static std::vector<std::string> formatStackFinalization();
-        static int allocateStack(const std::string &var, int align, size_t index);
 
         static void freeReg(size_t index);
 
@@ -55,10 +55,10 @@ namespace ork::codeGenerator {
 
 
         inline static std::map<std::string, bool> variableRegs{
-                {"eax", true},
-                {"ebx", true},
-                {"ecx", true},
-                {"edx", true}
+                {"eax", false},
+                {"ebx", false},
+                {"ecx", false},
+                {"edx", false}
         };
 
         static void freeAllReg();

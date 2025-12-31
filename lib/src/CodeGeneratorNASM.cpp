@@ -56,12 +56,15 @@ namespace ork::codeGenerator {
                         )
                     );
 
-                    auto stackInit = formatStackInitialization();
-                    nasmCode.insert(nasmCode.end(), stackInit.begin(), stackInit.end());
+                    std::vector<std::string> stackInitialization;
+                    if (stack.offset != 0) stackInitialization = formatStackInitialization();
+                    nasmCode.insert(nasmCode.end(), stackInitialization.begin(), stackInitialization.end());
                     break;
                 }
                 case Operation::FUNC_END: {
-                    auto stackFinalization = formatStackFinalization();
+                    std::vector<std::string> stackFinalization;
+                    if (stack.offset != 0) stackFinalization = formatStackFinalization();
+
                     nasmCode.insert(nasmCode.end(), stackFinalization.begin(), stackFinalization.end());
                     nasmCode.push_back(
                         instructionSelectionTable::NASM_REG[inst->op]
@@ -69,7 +72,9 @@ namespace ork::codeGenerator {
                     break;
                 }
                 case Operation::ALLOCA:
+                    if (!findLocation(getOperand(inst->result).value()).has_value()) break;
                     std::string resultLoc = formatLocation(findLocation(getOperand(inst->result).value()).value());
+
                     if (getNumOperand(inst->arg1).has_value()) {
                         nasmCode.push_back(
                         fmt::format(
@@ -147,6 +152,7 @@ namespace ork::codeGenerator {
 
     std::optional<std::string> NASM::allocateReg(const std::string &var, size_t index) {
         freeReg(index);
+        if (auto [first, second] = liveInterval[var]; first == second) return std::nullopt;
 
         for (auto &reg: variableRegs) {
             if (!reg.second) {
@@ -157,6 +163,16 @@ namespace ork::codeGenerator {
         }
 
         return std::nullopt;
+    }
+
+    std::optional<int> NASM::allocateStack(const std::string &var, int align, size_t index) {
+        freeReg(index);
+        if (auto [first, second] = liveInterval[var]; first == second) return std::nullopt;
+
+        varLocation[var] = Location::stackLoc(stack.offset);
+        stack.offset += align;
+
+        return stack.offset;
     }
 
     std::optional<Location> NASM::findLocation(const std::string &var) {
@@ -193,15 +209,6 @@ namespace ork::codeGenerator {
         result.emplace_back("pop ebp\n");
 
         return result;
-    }
-
-    int NASM::allocateStack(const std::string &var, int align, size_t index) {
-        freeReg(index);
-
-        varLocation[var] = Location::stackLoc(stack.offset);
-        stack.offset += align;
-
-        return stack.offset;
     }
 
     void NASM::freeReg(size_t index) {
