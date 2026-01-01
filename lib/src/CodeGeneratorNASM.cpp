@@ -49,6 +49,8 @@ namespace ork::codeGenerator {
         for (auto inst = begin; inst <= end; ++inst) {
             switch (inst->op) {
                 case Operation::FUNC_START: {
+                    if (varLocation.empty()) break;
+
                     nasmCode.push_back(
                         fmt::format(
                             fmt::runtime(instructionSelectionTable::NASM_REG[inst->op]),
@@ -62,6 +64,7 @@ namespace ork::codeGenerator {
                     break;
                 }
                 case Operation::FUNC_END: {
+                    if (varLocation.empty()) break;
                     std::vector<std::string> stackFinalization;
                     if (stack.offset != 0) stackFinalization = formatStackFinalization();
 
@@ -71,7 +74,8 @@ namespace ork::codeGenerator {
                     );
                     break;
                 }
-                case Operation::ALLOCA:
+
+                case Operation::ALLOCA: {
                     if (!findLocation(getOperand(inst->result).value()).has_value()) break;
                     std::string resultLoc = formatLocation(findLocation(getOperand(inst->result).value()).value());
 
@@ -96,6 +100,9 @@ namespace ork::codeGenerator {
                     } else
                         throw std::runtime_error("NASM::generateFuncNasm: unsupported operand type");
                     break;
+                }
+                default:
+                    throw std::runtime_error("NASM::generateFuncNasm: unsupported operation");
             }
         }
     }
