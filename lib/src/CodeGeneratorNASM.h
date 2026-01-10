@@ -55,11 +55,12 @@ namespace ork::codeGenerator {
 
 
         inline static std::map<std::string, bool> variableRegs{
-                {"eax", false},
-                {"ebx", false},
-                {"ecx", false},
-                {"edx", false}
+                {"ebx", true},
+                {"esi", true},
+                {"edi", true},
         };
+
+        inline static std::string TEMP_REG = "ecx";
 
         static void freeAllReg();
 

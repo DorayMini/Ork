@@ -13,6 +13,9 @@
 
 namespace ork::codeGenerator {
 
+    /* TODO:
+     *  Detect use before definition of variables (Semantic analyzer)
+     */
     std::vector<std::string> NASM::generate(const std::vector<Instruction> &insts) {
         liveIntervalsAnalysis(insts);
 
@@ -22,6 +25,7 @@ namespace ork::codeGenerator {
             switch (inst.op) {
                 case Operation::ALLOCA:
                     if (findLocation(getOperand(inst.result).value()).has_value()) break;
+
                     if (hasFreeRegister()) {
                         allocateReg(getOperand(inst.result).value(), index);
                     } else {
@@ -50,7 +54,6 @@ namespace ork::codeGenerator {
             switch (inst->op) {
                 case Operation::FUNC_START: {
                     if (varLocation.empty()) break;
-
                     nasmCode.push_back(
                         fmt::format(
                             fmt::runtime(instructionSelectionTable::NASM_REG[inst->op]),
@@ -77,8 +80,8 @@ namespace ork::codeGenerator {
 
                 case Operation::ALLOCA: {
                     if (!findLocation(getOperand(inst->result).value()).has_value()) break;
-                    std::string resultLoc = formatLocation(findLocation(getOperand(inst->result).value()).value());
 
+                    std::string resultLoc = formatLocation(findLocation(getOperand(inst->result).value()).value());
                     if (getNumOperand(inst->arg1).has_value()) {
                         nasmCode.push_back(
                         fmt::format(
@@ -89,12 +92,25 @@ namespace ork::codeGenerator {
                         );
                     }
                     else if (getOperand(inst->arg1).has_value()) {
-                        auto loc = formatLocation(findLocation(getOperand(inst->arg1).value()).value());
+                        auto location = findLocation(getOperand(inst->arg1).value());
+                        if (!location.has_value()) throw std::runtime_error("NASM::generateFuncNasm: operand not found");
+
+                        if (location.value().kind == Location::STACK) {
+                            auto loc = formatLocation(location.value());
+                            nasmCode.push_back(
+                                fmt::format(
+                                    fmt::runtime(instructionSelectionTable::NASM_REG[inst->op]),
+                                    TEMP_REG,
+                                    loc
+                                )
+                            );
+                        }
+
                         nasmCode.push_back(
                         fmt::format(
                             fmt::runtime(instructionSelectionTable::NASM_REG[inst->op]),
                             resultLoc,
-                            loc
+                            TEMP_REG
                             )
                         );
                     } else
