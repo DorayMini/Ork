@@ -14,6 +14,8 @@
 namespace ork::codeGenerator {
 
     /* TODO:
+     *  - Make add inst
+     *  - Make sub inst
      *  Detect use before definition of variables (Semantic analyzer)
      */
     std::vector<std::string> NASM::generate(const std::vector<Instruction> &insts) {
@@ -77,7 +79,6 @@ namespace ork::codeGenerator {
                     );
                     break;
                 }
-
                 case Operation::ALLOCA: {
                     if (!findLocation(getOperand(inst->result).value()).has_value()) break;
 
@@ -95,8 +96,8 @@ namespace ork::codeGenerator {
                         auto location = findLocation(getOperand(inst->arg1).value());
                         if (!location.has_value()) throw std::runtime_error("NASM::generateFuncNasm: operand not found");
 
+                        auto loc = formatLocation(location.value());
                         if (location.value().kind == Location::STACK) {
-                            auto loc = formatLocation(location.value());
                             nasmCode.push_back(
                                 fmt::format(
                                     fmt::runtime(instructionSelectionTable::NASM_REG[inst->op]),
@@ -104,15 +105,23 @@ namespace ork::codeGenerator {
                                     loc
                                 )
                             );
+                            nasmCode.push_back(
+                                fmt::format(
+                                    fmt::runtime(instructionSelectionTable::NASM_REG[inst->op]),
+                                    resultLoc,
+                                    TEMP_REG
+                                )
+                            );
+                        } else {
+                            nasmCode.push_back(
+                                fmt::format(
+                                    fmt::runtime(instructionSelectionTable::NASM_REG[inst->op]),
+                                    resultLoc,
+                                    loc
+                                )
+                            );
                         }
 
-                        nasmCode.push_back(
-                        fmt::format(
-                            fmt::runtime(instructionSelectionTable::NASM_REG[inst->op]),
-                            resultLoc,
-                            TEMP_REG
-                            )
-                        );
                     } else
                         throw std::runtime_error("NASM::generateFuncNasm: unsupported operand type");
                     break;
@@ -233,6 +242,7 @@ namespace ork::codeGenerator {
 
         return result;
     }
+
 
     void NASM::freeReg(size_t index) {
         for (auto &loc: varLocation) {
