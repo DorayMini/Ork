@@ -25,7 +25,7 @@ namespace ork::codeGenerator {
         size_t startIndex = 0;
         for (const auto &inst: insts) {
             switch (inst.op) {
-                case Operation::ALLOCA: {
+                case Operation::MOV: {
                     auto resultOpOpt = getOperand(inst.result);
                     if (!resultOpOpt) break;
                     if (findLocation(*resultOpOpt)) break;
@@ -61,9 +61,9 @@ namespace ork::codeGenerator {
              );
         };
 
-        auto emitAloca = [&](const Operation &op, const std::string &dst, const std::string&src, bool useTemp) {
+        auto emitAloca = [&](const Operation &op, const std::string &dst, const std::string&src, bool useTemp = false) {
             if (useTemp) {
-                emit(op, TEMP_REG, src);
+                emit(Operation::MOV, TEMP_REG, src);
                 emit(op, dst, TEMP_REG);
             } else {
                 emit(op, dst, src);
@@ -92,7 +92,7 @@ namespace ork::codeGenerator {
                     );
                     break;
                 }
-                case Operation::ALLOCA: {
+                case Operation::MOV: {
                     auto resultOpOpt = getOperand(inst->result);
                     if (!resultOpOpt) break;
 
@@ -113,10 +113,10 @@ namespace ork::codeGenerator {
                     if (!location) throw std::runtime_error("NASM::generateFuncNasm: operand not found");
 
                     auto formattedLoc = formatLocation(*location);
-                    emitAloca(Operation::ALLOCA, resultFormattedLoc, formattedLoc, location->kind == Location::STACK);
-
+                    emitAloca(Operation::MOV, resultFormattedLoc, formattedLoc, location->kind == Location::STACK);
                     break;
                 }
+
                 default:
                     throw std::runtime_error("NASM::generateFuncNasm: unsupported operation");
             }

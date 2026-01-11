@@ -104,7 +104,7 @@ namespace ork {
         }
         if (auto var = dynamic_cast<expression::Variable *>(node.get())) {
             instructions.push_back(std::move(Instruction{
-                .op = Operation::ALLOCA,
+                .op = Operation::MOV,
                 .arg1 = generate(std::move(var->value)),
                 .result = std::make_unique<Operand>(var->name->name)
             }));

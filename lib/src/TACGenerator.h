@@ -15,7 +15,7 @@ namespace ork::TACGenerator {
         SUB,
         MULT,
         DIV,
-        ALLOCA,
+        MOV,
         FUNC_START,
         FUNC_END,
     };

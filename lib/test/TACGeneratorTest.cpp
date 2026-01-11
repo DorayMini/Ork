@@ -28,7 +28,7 @@ TEST(TECGenerator, Case1) {
 
     expected.emplace_back(
         TACGenerator::Instruction{
-            .op = TACGenerator::Operation::ALLOCA,
+            .op = TACGenerator::Operation::MOV,
             .arg1 = std::make_unique<TACGenerator::Operand>(2),
             .result = std::make_unique<TACGenerator::Operand>("a")
         }

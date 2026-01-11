@@ -10,7 +10,7 @@ using namespace ork::TACGenerator;
 
 namespace ork::codeGenerator::instructionSelectionTable {
     inline std::map<Operation, std::string> NASM_REG{
-        {Operation::ALLOCA, "mov {}, {}\n"},
+        {Operation::MOV, "mov {}, {}\n"},
         {Operation::ADD, "add {}, {}\n"},
         {Operation::SUB, "sub {}, {}\n"},
         {Operation::MULT, "imul {}, {}\n"},
