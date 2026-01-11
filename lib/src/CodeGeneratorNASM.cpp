@@ -25,15 +25,18 @@ namespace ork::codeGenerator {
         size_t startIndex = 0;
         for (const auto &inst: insts) {
             switch (inst.op) {
-                case Operation::ALLOCA:
-                    if (findLocation(getOperand(inst.result).value()).has_value()) break;
+                case Operation::ALLOCA: {
+                    auto resultOpOpt = getOperand(inst.result);
+                    if (!resultOpOpt) break;
+                    if (findLocation(*resultOpOpt)) break;
 
                     if (hasFreeRegister()) {
-                        allocateReg(getOperand(inst.result).value(), index);
+                        allocateReg(*resultOpOpt, index);
                     } else {
-                        allocateStack(getOperand(inst.result).value(), 4, index);
+                        allocateStack(*resultOpOpt, 4, index);
                     }
                     break;
+                }
                 case Operation::FUNC_START:
                     startIndex = index;
                     break;
@@ -52,16 +55,26 @@ namespace ork::codeGenerator {
     }
 
     void NASM::generateFuncNasm(std::vector<Instruction>::const_iterator begin, std::vector<Instruction>::const_iterator end) {
+        auto emit = [&](const Operation &op, auto&&... args) {
+            nasmCode.push_back(
+                fmt::format(fmt::runtime(instructionSelectionTable::NASM_REG[op]), std::forward<decltype(args)>(args)...)
+             );
+        };
+
+        auto emitAloca = [&](const Operation &op, const std::string &dst, const std::string&src, bool useTemp) {
+            if (useTemp) {
+                emit(op, TEMP_REG, src);
+                emit(op, dst, TEMP_REG);
+            } else {
+                emit(op, dst, src);
+            }
+        };
+
         for (auto inst = begin; inst <= end; ++inst) {
             switch (inst->op) {
                 case Operation::FUNC_START: {
                     if (varLocation.empty()) break;
-                    nasmCode.push_back(
-                        fmt::format(
-                            fmt::runtime(instructionSelectionTable::NASM_REG[inst->op]),
-                            getOperand(inst->result).value()
-                        )
-                    );
+                    emit(inst->op, getOperand(inst->result).value());
 
                     std::vector<std::string> stackInitialization;
                     if (stack.offset != 0) stackInitialization = formatStackInitialization();
@@ -80,50 +93,28 @@ namespace ork::codeGenerator {
                     break;
                 }
                 case Operation::ALLOCA: {
-                    if (!findLocation(getOperand(inst->result).value()).has_value()) break;
+                    auto resultOpOpt = getOperand(inst->result);
+                    if (!resultOpOpt) break;
 
-                    std::string resultLoc = formatLocation(findLocation(getOperand(inst->result).value()).value());
-                    if (getNumOperand(inst->arg1).has_value()) {
-                        nasmCode.push_back(
-                        fmt::format(
-                            fmt::runtime(instructionSelectionTable::NASM_REG[inst->op]),
-                                resultLoc,
-                                getNumOperand(inst->arg1).value()
-                            )
-                        );
+                    auto resultLocOpt = findLocation(*resultOpOpt);
+                    if (!resultLocOpt) break;
+
+                    std::string resultFormattedLoc = formatLocation(*resultLocOpt);
+
+                    if (auto numOP = getNumOperand(inst->arg1)) {
+                        emit(inst->op,resultFormattedLoc, *numOP);
+                        break;
                     }
-                    else if (getOperand(inst->arg1).has_value()) {
-                        auto location = findLocation(getOperand(inst->arg1).value());
-                        if (!location.has_value()) throw std::runtime_error("NASM::generateFuncNasm: operand not found");
 
-                        auto loc = formatLocation(location.value());
-                        if (location.value().kind == Location::STACK) {
-                            nasmCode.push_back(
-                                fmt::format(
-                                    fmt::runtime(instructionSelectionTable::NASM_REG[inst->op]),
-                                    TEMP_REG,
-                                    loc
-                                )
-                            );
-                            nasmCode.push_back(
-                                fmt::format(
-                                    fmt::runtime(instructionSelectionTable::NASM_REG[inst->op]),
-                                    resultLoc,
-                                    TEMP_REG
-                                )
-                            );
-                        } else {
-                            nasmCode.push_back(
-                                fmt::format(
-                                    fmt::runtime(instructionSelectionTable::NASM_REG[inst->op]),
-                                    resultLoc,
-                                    loc
-                                )
-                            );
-                        }
+                    auto argOpOpt = getOperand(inst->arg1);
+                    if (!argOpOpt) throw std::runtime_error("NASM::generate: unsupported operand type");
 
-                    } else
-                        throw std::runtime_error("NASM::generateFuncNasm: unsupported operand type");
+                    auto location = findLocation(*argOpOpt);
+                    if (!location) throw std::runtime_error("NASM::generateFuncNasm: operand not found");
+
+                    auto formattedLoc = formatLocation(*location);
+                    emitAloca(Operation::ALLOCA, resultFormattedLoc, formattedLoc, location->kind == Location::STACK);
+
                     break;
                 }
                 default:
