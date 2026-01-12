@@ -14,8 +14,7 @@
 namespace ork::codeGenerator {
 
     /* TODO:
-     *  - Make add inst
-     *  - Make sub inst
+     *  - add SUB inst
      *  Detect use before definition of variables (Semantic analyzer)
      */
     std::vector<std::string> NASM::generate(const std::vector<Instruction> &insts) {
@@ -25,6 +24,7 @@ namespace ork::codeGenerator {
         size_t startIndex = 0;
         for (const auto &inst: insts) {
             switch (inst.op) {
+                case Operation::ADD:
                 case Operation::MOV: {
                     auto resultOpOpt = getOperand(inst.result);
                     if (!resultOpOpt) break;
@@ -46,8 +46,6 @@ namespace ork::codeGenerator {
                     freeAllReg();
                     stack.offset = 0;
                     break;
-                default:
-                    throw std::runtime_error("NASM::generate: unsupported operation");
             }
             index++;
         }
@@ -69,6 +67,8 @@ namespace ork::codeGenerator {
                 emit(op, dst, src);
             }
         };
+
+
 
         for (auto inst = begin; inst <= end; ++inst) {
             switch (inst->op) {
@@ -116,9 +116,45 @@ namespace ork::codeGenerator {
                     emitAloca(Operation::MOV, resultFormattedLoc, formattedLoc, location->kind == Location::STACK);
                     break;
                 }
+                case Operation::ADD: {
+                    auto resultOpOpt = getOperand(inst->result);
+                    if (!resultOpOpt) break;
 
+                    auto resultOpLoc = findLocation(*resultOpOpt);
+                    if (!resultOpLoc) break;
+
+                    auto formattedResultLoc = formatLocation(*resultOpLoc);
+
+                    if (auto arg1OpOpt = getNumOperand(inst->arg1)) {
+                        emit(Operation::MOV, formattedResultLoc, *arg1OpOpt);
+                    }
+
+                    auto arg1OpOpt = getOperand(inst->arg1);
+                    if (!arg1OpOpt) throw std::runtime_error("NASM::generate: Unsupported operand type");
+
+                    auto arg1Loc = findLocation(*arg1OpOpt);
+                    if (!arg1Loc) throw std::runtime_error("NASM::generate: Arg1 operand not found");
+
+                    auto formattedArg1Loc = formatLocation(*arg1Loc);
+                    emitAloca(Operation::MOV, formattedResultLoc, formattedArg1Loc, resultOpLoc->kind == Location::STACK && arg1Loc->kind == Location::STACK);
+
+
+                    if (auto arg2OpOpt = getNumOperand(inst->arg2)) {
+                        emit(Operation::MOV, formattedResultLoc, *arg2OpOpt);
+                    }
+
+                    auto arg2OpOpt = getOperand(inst->arg2);
+                    if (!arg2OpOpt) throw std::runtime_error("NASM::generate: Unsupported operand type");
+
+                    auto arg2Loc = findLocation(*arg2OpOpt);
+                    if (!arg1Loc) throw std::runtime_error("NASM::generate: Arg2 operand not found");
+
+                    auto formattedArg2Loc = formatLocation(*arg2Loc);
+                    emitAloca(Operation::ADD, formattedResultLoc, formattedArg2Loc, resultOpLoc->kind == Location::STACK && arg2Loc->kind == Location::STACK);
+                    break;
+                }
                 default:
-                    throw std::runtime_error("NASM::generateFuncNasm: unsupported operation");
+                    throw std::runtime_error(fmt::format("NASM::generateFuncNasm: unsupported operation {}", typeid(inst->op).name()));
             }
         }
     }
