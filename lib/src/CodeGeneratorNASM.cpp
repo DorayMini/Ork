@@ -127,6 +127,7 @@ namespace ork::codeGenerator {
 
                     if (auto arg1OpOpt = getNumOperand(inst->arg1)) {
                         emit(Operation::MOV, formattedResultLoc, *arg1OpOpt);
+                        break;
                     }
 
                     auto arg1OpOpt = getOperand(inst->arg1);
@@ -140,7 +141,8 @@ namespace ork::codeGenerator {
 
 
                     if (auto arg2OpOpt = getNumOperand(inst->arg2)) {
-                        emit(Operation::MOV, formattedResultLoc, *arg2OpOpt);
+                        emit(Operation::ADD, formattedResultLoc, *arg2OpOpt);
+                        break;
                     }
 
                     auto arg2OpOpt = getOperand(inst->arg2);
