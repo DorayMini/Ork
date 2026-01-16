@@ -92,15 +92,28 @@ namespace ork {
             if (auto fold = foldVariable(g_op, *g_arg1, *g_arg2)) {
                  return std::move(*fold);
             }
+            std::unique_ptr<Operand> result;
 
-            std::string result = fmt::format("f{}", counter++);
+            if (isTemprary(*g_arg1)) {
+                result = std::move(g_arg1);
+            } else {
+                std::string name = fmt::format("%i{}", counter++);
+                result = std::make_unique<Operand>(name);
+
+                instructions.push_back(std::move(Instruction{
+                    .op = Operation::MOV,
+                    .arg1 = std::move(g_arg1),
+                    .result = std::make_unique<Operand>(name)
+                }));
+            }
+
             instructions.push_back(std::move(Instruction{
                 .op = g_op,
-                .arg1 = std::move(g_arg1),
-                .arg2 = std::move(g_arg2),
-                .result = std::make_unique<Operand>(result)
+                .arg1 = std::move(g_arg2),
+                .result = std::make_unique<Operand>(*result)
             }));
-            return std::make_unique<Operand>(result);
+
+            return result;
         }
         if (auto var = dynamic_cast<expression::Variable *>(node.get())) {
             instructions.push_back(std::move(Instruction{
@@ -117,6 +130,10 @@ namespace ork {
 
     std::vector<TACGenerator::Instruction> TACGenerator::Generator::takeInstructions() {
         return std::move(instructions);
+    }
+
+    bool TACGenerator::Generator::isTemprary(const Operand& operand) {
+        return std::holds_alternative<std::string>(operand);
     }
 
     TACGenerator::Operation TACGenerator::Generator::getOperation(const expression::BinaryOp &node) {
