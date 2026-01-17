@@ -37,7 +37,7 @@ namespace ork::TACGenerator {
         std::vector<Instruction> takeInstructions();
 
     private:
-        static bool isTemprary(const Operand& operand);
+        static bool isTemporary(const Operand& operand);
         std::unique_ptr<Operand> generate(std::unique_ptr<expression::Base> node);
         static Operation getOperation(const expression::BinaryOp &node);
         static std::optional<std::unique_ptr<Operand>> foldVariable(const Operation& op, const Operand& val1, const Operand& val2);

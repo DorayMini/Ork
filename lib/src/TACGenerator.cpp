@@ -94,7 +94,7 @@ namespace ork {
             }
             std::unique_ptr<Operand> result;
 
-            if (isTemprary(*g_arg1)) {
+            if (isTemporary(*g_arg1)) {
                 result = std::move(g_arg1);
             } else {
                 std::string name = fmt::format("%i{}", counter++);
@@ -132,8 +132,11 @@ namespace ork {
         return std::move(instructions);
     }
 
-    bool TACGenerator::Generator::isTemprary(const Operand& operand) {
-        return std::holds_alternative<std::string>(operand);
+    bool TACGenerator::Generator::isTemporary(const Operand& operand) {
+        if (std::holds_alternative<std::string>(operand)) {
+            return std::get<std::string>(operand)[0] == '%';
+        }
+        return false;
     }
 
     TACGenerator::Operation TACGenerator::Generator::getOperation(const expression::BinaryOp &node) {
