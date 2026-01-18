@@ -116,7 +116,10 @@ namespace ork::codeGenerator {
                     emitAloca(Operation::MOV, resultFormattedLoc, formattedLoc, location->kind == Location::STACK);
                     break;
                 }
-                case Operation::ADD: {
+                case Operation::SUB:
+                case Operation::ADD:
+                case Operation::MULT:
+                case Operation::DIV:{
                     auto resultOpOpt = getOperand(inst->result);
                     if (!resultOpOpt) break;
 
@@ -126,7 +129,7 @@ namespace ork::codeGenerator {
                     auto formattedResultLoc = formatLocation(*resultOpLoc);
 
                     if (auto arg1OpOpt = getNumOperand(inst->arg1)) {
-                        emit(Operation::MOV, formattedResultLoc, *arg1OpOpt);
+                        emit(inst->op, formattedResultLoc, *arg1OpOpt);
                         break;
                     }
 
@@ -137,22 +140,7 @@ namespace ork::codeGenerator {
                     if (!arg1Loc) throw std::runtime_error("NASM::generate: Arg1 operand not found");
 
                     auto formattedArg1Loc = formatLocation(*arg1Loc);
-                    emitAloca(Operation::MOV, formattedResultLoc, formattedArg1Loc, resultOpLoc->kind == Location::STACK && arg1Loc->kind == Location::STACK);
-
-
-                    if (auto arg2OpOpt = getNumOperand(inst->arg2)) {
-                        emit(Operation::ADD, formattedResultLoc, *arg2OpOpt);
-                        break;
-                    }
-
-                    auto arg2OpOpt = getOperand(inst->arg2);
-                    if (!arg2OpOpt) throw std::runtime_error("NASM::generate: Unsupported operand type");
-
-                    auto arg2Loc = findLocation(*arg2OpOpt);
-                    if (!arg1Loc) throw std::runtime_error("NASM::generate: Arg2 operand not found");
-
-                    auto formattedArg2Loc = formatLocation(*arg2Loc);
-                    emitAloca(Operation::ADD, formattedResultLoc, formattedArg2Loc, resultOpLoc->kind == Location::STACK && arg2Loc->kind == Location::STACK);
+                    emit(inst->op, formattedResultLoc, formattedArg1Loc);
                     break;
                 }
                 default:
@@ -274,11 +262,11 @@ namespace ork::codeGenerator {
 
 
     void NASM::freeReg(size_t index) {
-        for (auto &loc: varLocation) {
-            if (loc.second.kind == Location::STACK) continue;
+        for (auto &[var,loc]: varLocation) {
+            if (loc.kind == Location::STACK) continue;
 
-            if (index > liveInterval[loc.first].second) {
-                variableRegs[loc.second.reg] = false;
+            if (index > liveInterval[var].second) {
+                variableRegs[loc.reg] = false;
             }
         }
     }
