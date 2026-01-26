@@ -28,6 +28,7 @@ namespace ork {
                         static std::map<std::string_view, token::KEYWORD> keywords = {
                             {"fn", token::KEYWORD::FN},
                             {"return", token::KEYWORD::RETURN},
+                            {"if", token::KEYWORD::IF},
                         };
 
                         if (auto keyword = keywords.find(valueString); keyword != keywords.end()) {
@@ -53,7 +54,7 @@ namespace ork {
                         });
 
                         std::string_view digitString(iter, blank);
-                        int number = 0;
+                        int32_t number = 0;
                         std::from_chars(digitString.data(), digitString.data() + digitString.size(), number);
                         tokens.emplace_back(token::INTEGER{ .value = number });
 
@@ -79,7 +80,48 @@ namespace ork {
                 case '-': tokens.emplace_back(token::MINUS{});     break;
                 case '*': tokens.emplace_back(token::ASTERISK{});  break;
                 case '/': tokens.emplace_back(token::SLASH{});     break;
-                case '=': tokens.emplace_back(token::EQUAL{});     break;
+                case '>': {
+                    if (std::next(iter) != input.end() && *std::next(iter) == '=') {
+                        iter++;
+                        tokens.emplace_back(token::GREATER_EQUAL{});
+                        break;
+                    }
+                    tokens.emplace_back(token::GREATER{});
+                    break;
+                }
+                case '<': {
+                    if (std::next(iter) != input.end() && *std::next(iter) == '=') {
+                        iter++;
+                        tokens.emplace_back(token::LESS_EQUAL{});
+                    }
+                    tokens.emplace_back(token::LESS{});
+                    break;
+                }
+                case '=': {
+                    if (std::next(iter) != input.end() && *std::next(iter) == '=') {
+                        iter++;
+                        tokens.emplace_back(token::EQUAL_EQUAL{});
+                        break;
+                    }
+                    tokens.emplace_back(token::EQUAL{});
+                    break;
+                }
+                case '|': {
+                    if (std::next(iter) != input.end() && *std::next(iter) == '|') {
+                        iter++;
+                        tokens.emplace_back(token::OR_OR{});
+                        break;
+                    }
+                    throw std::runtime_error("unexpected character");
+                }
+                case '&': {
+                    if (std::next(iter) != input.end() && *std::next(iter) == '&') {
+                        iter++;
+                        tokens.emplace_back(token::AND_AND{});
+                        break;
+                    }
+                    throw std::runtime_error("unexpected character");
+                }
                 case '"': {
                     auto blank = std::ranges::find(remainingString, '"');
 

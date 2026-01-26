@@ -7,7 +7,8 @@
 namespace ork::lexer::token {
     enum class KEYWORD {
         FN,
-        RETURN
+        IF,
+        RETURN,
     };
     enum class TYPE {
         INTEGER
@@ -55,9 +56,30 @@ namespace ork::lexer::token {
     struct SLASH {
         bool operator==(const SLASH&) const = default;
     }; // /
+    struct GREATER {
+        bool operator==(const GREATER&) const = default;
+    }; // >
+    struct LESS {
+        bool operator==(const LESS&) const = default;
+    }; // <
+    struct GREATER_EQUAL {
+        bool operator==(const GREATER_EQUAL&) const = default;
+    }; // >=
+    struct LESS_EQUAL {
+        bool operator==(const LESS_EQUAL&) const = default;
+    }; // <=
     struct EQUAL {
         bool operator==(const EQUAL&) const = default;
-    };
+    }; // =
+    struct OR_OR {
+        bool operator==(const OR_OR&) const = default;
+    }; // ||
+    struct AND_AND {
+        bool operator==(const AND_AND&) const = default;
+    }; // &&
+    struct EQUAL_EQUAL {
+        bool operator==(const EQUAL_EQUAL&) const = default;
+    }; // ==
 
     using Lexem = std::variant<
         KEYWORD,
@@ -75,6 +97,13 @@ namespace ork::lexer::token {
         MINUS,
         ASTERISK,
         SLASH,
-        EQUAL
+        GREATER,
+        LESS,
+        GREATER_EQUAL,
+        LESS_EQUAL,
+        EQUAL,
+        OR_OR,
+        AND_AND,
+        EQUAL_EQUAL
     >;
 } // namespace ork::lexer::token
