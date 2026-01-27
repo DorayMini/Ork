@@ -36,6 +36,13 @@ namespace ork::expression {
         Asterisk,
         Slash,
         Equal,
+        Greater,
+        Less,
+        GreaterEqual,
+        LessEqual,
+        OrOr,
+        AndAnd,
+        EqualEqual
     };
 
     class Binary final : public Base {
@@ -64,17 +71,14 @@ namespace ork::expression {
         [[nodiscard]] bool equals(const Base &other) const override;
     };
 
-    enum class VarType {
-        Int,
-    };
 
     class Variable final : public Base {
     public:
-        VarType type;
+        lexer::token::TYPE type;
         std::unique_ptr<Identifier> name;
         std::unique_ptr<Base> value = nullptr;
 
-        explicit Variable(VarType type, std::unique_ptr<Identifier> name, std::unique_ptr<Base> value)
+        explicit Variable(lexer::token::TYPE type, std::unique_ptr<Identifier> name, std::unique_ptr<Base> value)
             : type(type), name(std::move(name)), value(std::move(value)) {
         }
 
@@ -98,13 +102,21 @@ namespace ork::expression {
             std::unique_ptr<Identifier> name,
             std::vector<std::unique_ptr<Base> > body = {},
             std::vector<std::unique_ptr<Variable>> arguments = {},
-            ReturnType returnType = ReturnType::Void
-        )
-            : name(std::move(name)), body(std::move(body)), arguments(std::move(arguments)), returnType(returnType) {
-
-        }
+            ReturnType returnType = ReturnType::Void )
+            : name(std::move(name)), body(std::move(body)), arguments(std::move(arguments)), returnType(returnType) {}
 
         ~FunctionDecl() override = default;
+
+        [[nodiscard]] bool equals(const Base &other) const override;
+    };
+    class IfStatement final : public Base {
+    public:
+        std::unique_ptr<Base> condition;
+        std::vector<std::unique_ptr<Base>> then;
+
+        explicit IfStatement(std::unique_ptr<Base> condition = {}, std::vector<std::unique_ptr<Base>> then = {}) : condition(std::move(condition)), then(std::move(then)) {}
+
+        ~IfStatement() override = default;
 
         [[nodiscard]] bool equals(const Base &other) const override;
     };

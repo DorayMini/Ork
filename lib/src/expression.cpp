@@ -101,4 +101,17 @@ namespace ork::expression {
 
         return true;
     }
+
+    bool IfStatement::equals(const Base &other) const {
+        auto otherIf = dynamic_cast<const IfStatement *>(&other);
+        if (!otherIf) return false;
+        if (then.size() != otherIf->then.size()) return false;
+
+
+        for (size_t i = 0; i < then.size(); ++i) {
+            if (!then[i]->equals(*otherIf->then[i])) return false;
+        }
+
+        return true;
+    }
 } // namespace ork::expression

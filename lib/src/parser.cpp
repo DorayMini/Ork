@@ -16,17 +16,19 @@ namespace ork {
         std::vector<std::unique_ptr<expression::Base>> result;
 
         while (!tokens_.empty()) {
-            result.emplace_back(std::move(parseCodeBlock()));
+            result.emplace_back(std::move(parseStatement()));
         }
 
         return result;
     }
 
-    std::unique_ptr<expression::Base> parser::parseCodeBlock() {
+    std::unique_ptr<expression::Base> parser::parseStatement() {
         if (std::holds_alternative<lexer::token::KEYWORD>(peek())) {
             switch (std::get<lexer::token::KEYWORD>(take())) {
                 case lexer::token::KEYWORD::FN:
                     return parseFunctionDecl();
+                case lexer::token::KEYWORD::IF:
+                    return parseIfStatement();
                 default:
                     throw std::runtime_error("unrecognized keyword");
             }
@@ -35,6 +37,12 @@ namespace ork {
             return parseVariable();
         }
         return parseExpression();
+    }
+
+    void parser::parseCodeBlock(std::vector<std::unique_ptr<expression::Base>> &output) {
+        while (!tokens_.empty() && !std::holds_alternative<lexer::token::RBRACE>(peek())) {
+            output.emplace_back(parseStatement());
+        }
     }
 
     bool parser::isAtStatementTerminator(int leftBindingPower) const {
@@ -52,6 +60,14 @@ namespace ork {
                 [](lexer::token::INTEGER token) -> std::unique_ptr<expression::Base> {
                     return std::make_unique<expression::Constant>(expression::Constant(token.value));
                 },
+                [this](lexer::token::LPAR token) -> std::unique_ptr<expression::Base> {
+                    auto expr = parseExpression(0);
+                    if (!std::holds_alternative<lexer::token::RPAR>(peek())) {
+                        throw std::runtime_error("unrecognized rpar");
+                    }
+                    take();
+                    return expr;
+                },
                 [](auto &&) -> std::unique_ptr<expression::Base> {
                     throw std::runtime_error(fmt::format("Expected integer"));
                 }
@@ -59,26 +75,13 @@ namespace ork {
             take());
 
         while (!(tokens_.empty() || std::holds_alternative<lexer::token::SEMICOLON>(peek()))) {
-            auto [rightBindingPower, op] = std::visit(
-                match{
-                    [](lexer::token::PLUS) -> std::tuple<int, expression::BinaryOp> {
-                        return {1, expression::BinaryOp::Plus};
-                    },
-                    [](lexer::token::MINUS) -> std::tuple<int, expression::BinaryOp> {
-                        return {1, expression::BinaryOp::Minus};
-                    },
-                    [](lexer::token::ASTERISK) -> std::tuple<int, expression::BinaryOp> {
-                        return {2, expression::BinaryOp::Asterisk};
-                    },
-                    [](lexer::token::SLASH) -> std::tuple<int, expression::BinaryOp> {
-                        return {2, expression::BinaryOp::Slash};
-                    },
-                    []([[maybe_unused]] auto &&token) -> std::tuple<int, expression::BinaryOp> {
-                        throw std::runtime_error(fmt::format("Unexpected token '{}'. Expected binary operator.",
-                                                             typeid(token).name()));
-                    }
-                },
-                peek());
+            auto token = peek();
+
+            auto it = priority_.find(token);
+            if (it == priority_.end()) {
+                return lhs;
+            }
+            auto [rightBindingPower, op] = it->second;
 
 
             if (rightBindingPower < leftBindingPower) {
@@ -102,15 +105,10 @@ namespace ork {
     std::unique_ptr<expression::Variable> parser::parseVariable() {
         auto type = std::visit(
             match{
-                [](lexer::token::TYPE type) -> expression::VarType {
-                    switch (type) {
-                        case lexer::token::TYPE::INTEGER:
-                            return expression::VarType::Int;
-                        default:
-                            throw std::runtime_error("unrecognized variable type");
-                    }
+                [](lexer::token::TYPE type) -> lexer::token::TYPE {
+                    return type;
                 },
-                [](auto &&) -> expression::VarType {
+                [](auto &&) -> lexer::token::TYPE {
                     throw std::runtime_error("Unexpected token. Expected variable type");
                 }
             },
@@ -160,30 +158,32 @@ namespace ork {
             throw std::runtime_error("parseFunctionDecl: expected ')' after '('");
         }
 
-
-        if (std::holds_alternative<lexer::token::LBRACE>(take())) {
-            auto fun = std::make_unique<expression::FunctionDecl>(std::move(name));
-            while (!std::holds_alternative<lexer::token::RBRACE>(peek())) {
-                if (tokens_.empty()) {
-                    throw std::runtime_error("parseFunctionDecl: unexpected end of tokens while parsing body");
-                }
-
-                auto expr = parseCodeBlock();
-
-                if (!expr) {
-                    throw std::runtime_error("parseFunctionDecl: failed to parse expression in function body");
-                }
-
-                fun->body.emplace_back(std::move(expr));
-                if (!tokens_.empty() && std::holds_alternative<lexer::token::SEMICOLON>(peek())) {
-                    take();
-                }
-            }
-
-            take();
-            return fun;
-        } else {
+        if (!std::holds_alternative<lexer::token::LBRACE>(take()))
             throw std::runtime_error("parseFunctionDecl: expected '{' to start function body");
+
+        auto fun = std::make_unique<expression::FunctionDecl>(std::move(name));
+        parseCodeBlock(fun->body);
+
+        if (!std::holds_alternative<lexer::token::RBRACE>(take())) {
+            throw std::runtime_error("parseFunctionDecl: expected '}'");
         }
+        return fun;
+
+    }
+
+    std::unique_ptr<expression::Base> parser::parseIfStatement() {
+        auto If = std::make_unique<expression::IfStatement>(std::move(parseExpression(0)));
+
+        if (!std::holds_alternative<lexer::token::LBRACE>(take())) {
+            throw std::runtime_error("parseIfStatement: expected '{'");
+        }
+
+        parseCodeBlock(If->then);
+
+        if (!std::holds_alternative<lexer::token::RBRACE>(take())) {
+            throw std::runtime_error("parseIfStatement: expected '}'");
+        }
+
+        return If;
     }
 } // namespace ork
