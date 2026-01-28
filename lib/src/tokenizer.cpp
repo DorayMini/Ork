@@ -29,19 +29,14 @@ namespace ork {
                             {"fn", token::KEYWORD::FN},
                             {"return", token::KEYWORD::RETURN},
                             {"if", token::KEYWORD::IF},
+                            {"i32", token::KEYWORD::INT32},
+                            {"bool", token::KEYWORD::BOOL},
+                            {"true", token::KEYWORD::TRUE},
+                            {"false", token::KEYWORD::FALSE}
                         };
 
                         if (auto keyword = keywords.find(valueString); keyword != keywords.end()) {
                             tokens.emplace_back(keyword->second);
-                            break;
-                        }
-
-                        static std::map<std::string_view, token::TYPE> types = {
-                            {"int", token::TYPE::INTEGER}
-                        };
-
-                        if (auto type = types.find(valueString); type != types.end()) {
-                            tokens.emplace_back(type->second);
                             break;
                         }
 

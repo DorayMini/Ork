@@ -6,12 +6,14 @@
 
 using namespace ork;
 TEST(Sema, Case1) {
-    std::vector t(lexer::proccess("fn main() {int d = 2; int b = a;}"));
+    std::vector t(lexer::proccess("fn main() {i32 d = 2; bool b = 2 > 1;}"));
     parser p{std::span(t)};
 
     auto parsed = p.parse();
 
     Sema sema;
+
+    sema.check(parsed);
 
     EXPECT_THROW(
         sema.check(parsed),

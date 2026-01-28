@@ -7,6 +7,6 @@
 
 namespace ork {
     using Value = std::variant<
-        int32_t
+        int, bool
     >;
 } // namespace ork

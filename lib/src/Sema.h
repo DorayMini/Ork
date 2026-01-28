@@ -1,7 +1,7 @@
 #pragma once
 #include <stack>
 #include <string>
-#include <unordered_set>
+#include <unordered_map>
 #include "parser.h"
 
 #include "token.h"
@@ -12,11 +12,18 @@ class Sema {
 public:
     Sema() = default;
     void check(std::vector<std::unique_ptr<expression::Base>>& nodes);
-    void visit(std::unique_ptr<expression::Base>& node);
 
 private:
-    std::string _error = "";
-    std::unordered_set<std::string> _symbolTable;
+    struct Symbol {
+        expression::Type type;
+    };
+
+    std::string error_;
+    std::unordered_map<std::string, Symbol> symbolTable_;
+
+    expression::Type inferType(const std::unique_ptr<expression::Base>& node);
+
+    void visit(std::unique_ptr<expression::Base>& node);
 };
 
 } // ork

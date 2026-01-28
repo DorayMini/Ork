@@ -14,14 +14,14 @@
 namespace ork {
      class parser {
      public:
-          explicit parser(std::span<lexer::token::Lexem> tokens) : tokens_(tokens) {}
+          explicit parser(std::span<lexer::token::Lexem> tokens) : _tokens(tokens) {}
 
           std::vector<std::unique_ptr<expression::Base>> parse();
 
      private:
-          std::span<lexer::token::Lexem> tokens_;
+          std::span<lexer::token::Lexem> _tokens;
 
-          inline static std::map<lexer::token::Lexem, std::tuple<int, expression::BinaryOp>> priority_{
+          inline static std::map<lexer::token::Lexem, std::tuple<int, expression::BinaryOp>> _priority{
                // Arithmetic
                {lexer::token::PLUS{}, std::make_tuple(1, expression::BinaryOp::Plus)},
                {lexer::token::MINUS{}, {1, expression::BinaryOp::Minus}},
@@ -29,7 +29,7 @@ namespace ork {
                {lexer::token::SLASH{}, {2, expression::BinaryOp::Slash}},
 
                // Comparison
-               {lexer::token::EQUAL_EQUAL{}, {3, expression::BinaryOp::Equal}},
+               {lexer::token::EQUAL_EQUAL{}, {3, expression::BinaryOp::EqualEqual}},
                {lexer::token::LESS{}, {4, expression::BinaryOp::Less}},
                {lexer::token::LESS_EQUAL{}, {4, expression::BinaryOp::LessEqual}},
                {lexer::token::GREATER{}, {4, expression::BinaryOp::Greater}},
@@ -38,6 +38,11 @@ namespace ork {
                // Logical
                {lexer::token::OR_OR{}, {1, expression::BinaryOp::OrOr}},
                {lexer::token::AND_AND{}, {2, expression::BinaryOp::AndAnd}},
+          };
+
+          inline static std::map<lexer::token::KEYWORD, expression::Type> _types {
+              {lexer::token::KEYWORD::INT32, expression::Type::Int32},
+              {lexer::token::KEYWORD::BOOL, expression::Type::Bool},
           };
 
 
@@ -52,12 +57,12 @@ namespace ork {
 
 
           [[nodiscard]] const lexer::token::Lexem& peek() const {
-               return tokens_.front();
+               return _tokens.front();
           }
 
           lexer::token::Lexem take() {
-               auto token = tokens_.front();
-               tokens_ = tokens_.subspan(1);
+               auto token = _tokens.front();
+              _tokens = _tokens.subspan(1);
                return token;
           }
      };

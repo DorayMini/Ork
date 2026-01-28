@@ -10,7 +10,7 @@
 using namespace ork;
 
 TEST(TECGenerator, Case1) {
-    std::vector t(lexer::proccess("fn main() {int b = 1; int a = 2 + b;}"));
+    std::vector t(lexer::proccess("fn main() {i32 b = 1; i32 a = 2 + b;}"));
     parser p{std::span(t)};
     TACGenerator::Generator g;
 
@@ -30,32 +30,32 @@ TEST(TECGenerator, Case1) {
     expected.emplace_back(
         TACGenerator::Instruction{
             .op = TACGenerator::Operation::MOV,
-            .arg1 = std::make_unique<TACGenerator::Operand>(1),
-            .result = std::make_unique<TACGenerator::Operand>("b")
+            .result = std::make_unique<TACGenerator::Operand>("b"),
+            .arg1 = std::make_unique<TACGenerator::Operand>(1)
         }
     );
 
     expected.emplace_back(
         TACGenerator::Instruction{
             .op = TACGenerator::Operation::MOV,
-            .arg1 = std::make_unique<TACGenerator::Operand>(2),
-            .result = std::make_unique<TACGenerator::Operand>("%i0")
+            .result = std::make_unique<TACGenerator::Operand>("%i0"),
+            .arg1 = std::make_unique<TACGenerator::Operand>(2)
         }
     );
 
     expected.emplace_back(
         TACGenerator::Instruction{
             .op = TACGenerator::Operation::ADD,
-            .arg1 = std::make_unique<TACGenerator::Operand>("b"),
-            .result = std::make_unique<TACGenerator::Operand>("%i0")
+            .result = std::make_unique<TACGenerator::Operand>("%i0"),
+            .arg1 = std::make_unique<TACGenerator::Operand>("b")
         }
     );
 
     expected.emplace_back(
         TACGenerator::Instruction{
             .op = TACGenerator::Operation::MOV,
-            .arg1 = std::make_unique<TACGenerator::Operand>("%i0"),
-            .result = std::make_unique<TACGenerator::Operand>("a")
+            .result = std::make_unique<TACGenerator::Operand>("a"),
+            .arg1 = std::make_unique<TACGenerator::Operand>("%i0")
         }
     );
 

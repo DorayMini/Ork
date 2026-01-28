@@ -17,10 +17,10 @@ TEST(Parser, Case1) {
         expression::BinaryOp::Plus,
         std::make_unique<expression::Binary>(
             expression::BinaryOp::Asterisk,
-            std::make_unique<expression::Constant>(2),
-            std::make_unique<expression::Constant>(2)
+            std::make_unique<expression::Constant>(expression::Type::Int32, 2),
+            std::make_unique<expression::Constant>(expression::Type::Int32, 2)
         ),
-        std::make_unique<expression::Constant>(2)
+        std::make_unique<expression::Constant>(expression::Type::Int32, 2)
     );
 
     auto parsed = p.parse();
@@ -36,10 +36,10 @@ TEST(Parser, Case2) {
         expression::BinaryOp::Asterisk,
         std::make_unique<expression::Binary>(
             expression::BinaryOp::Plus,
-            std::make_unique<expression::Constant>(2),
-            std::make_unique<expression::Constant>(2)
+            std::make_unique<expression::Constant>(expression::Type::Int32, 2),
+            std::make_unique<expression::Constant>(expression::Type::Int32, 2)
         ),
-        std::make_unique<expression::Constant>(2)
+        std::make_unique<expression::Constant>(expression::Type::Int32, 2)
     );
 
     auto parsed = p.parse();
@@ -50,12 +50,12 @@ TEST(Parser, Case2) {
 }
 
 TEST(Parser, Case3) {
-    std::vector t(lexer::proccess("int a = 2;"));
+    std::vector t(lexer::proccess("i32 a = 2;"));
     parser p{std::span(t)};
     expression::Variable expected(
-        lexer::token::TYPE::INTEGER,
+        expression::Type::Int32,
         std::make_unique<expression::Identifier>("a"),
-        std::make_unique<expression::Constant>(2)
+        std::make_unique<expression::Constant>(expression::Type::Int32, 2)
     );
 
     auto parsed = p.parse();
@@ -64,15 +64,15 @@ TEST(Parser, Case3) {
 }
 
 TEST(Parser, Case4) {
-    std::vector t(lexer::proccess("int a = 2 + 2;"));
+    std::vector t(lexer::proccess("i32 a = 2 + 2;"));
     parser p{std::span(t)};
     expression::Variable expected(
-        lexer::token::TYPE::INTEGER,
+        expression::Type::Int32,
         std::make_unique<expression::Identifier>("a"),
         std::make_unique<expression::Binary>(
             expression::BinaryOp::Plus,
-            std::make_unique<expression::Constant>(2),
-            std::make_unique<expression::Constant>(2)
+            std::make_unique<expression::Constant>(expression::Type::Int32, 2),
+            std::make_unique<expression::Constant>(expression::Type::Int32, 2)
         )
     );
 
@@ -83,20 +83,20 @@ TEST(Parser, Case4) {
 }
 
 TEST(Parser, FUNC_CASE1) {
-    std::vector t(lexer::proccess("fn main() { int a = 2; int b = 4;}"));
+    std::vector t(lexer::proccess("fn main() { i32 a = 2; i32 b = 4;}"));
     parser p{std::span(t)};
     std::vector<std::unique_ptr<expression::Base>> body;
 
     body.push_back(std::make_unique<expression::Variable>(
-        lexer::token::TYPE::INTEGER,
+        expression::Type::Int32,
         std::make_unique<expression::Identifier>("a"),
-        std::make_unique<expression::Constant>(2)
+        std::make_unique<expression::Constant>(expression::Type::Int32, 2)
     ));
 
     body.push_back(std::make_unique<expression::Variable>(
-        lexer::token::TYPE::INTEGER,
+         expression::Type::Int32,
         std::make_unique<expression::Identifier>("b"),
-        std::make_unique<expression::Constant>(4)
+        std::make_unique<expression::Constant>(expression::Type::Int32, 4)
     ));
 
     expression::FunctionDecl expected(
@@ -115,14 +115,14 @@ TEST(Parser, LogicalOperatorsPriority) {
 
     auto left_and = std::make_unique<expression::Binary>(
         expression::BinaryOp::AndAnd,
-        std::make_unique<expression::Constant>(1),
-        std::make_unique<expression::Constant>(2)
+        std::make_unique<expression::Constant>(expression::Type::Int32, 1),
+        std::make_unique<expression::Constant>(expression::Type::Int32, 2)
     );
 
     expression::Binary expected(
         expression::BinaryOp::OrOr,
         std::move(left_and),
-        std::make_unique<expression::Constant>(3)
+        std::make_unique<expression::Constant>(expression::Type::Int32, 3)
     );
 
     auto parsed = p.parse();
@@ -139,11 +139,11 @@ TEST(Parser, IfElseStatement) {
     auto condition = std::make_unique<expression::Binary>(
         expression::BinaryOp::Greater,
         std::make_unique<expression::Identifier>("a"),
-        std::make_unique<expression::Constant>(5)
+        std::make_unique<expression::Constant>(expression::Type::Int32, 5)
     );
 
     auto then_branch = std::vector<std::unique_ptr<expression::Base>>();
-    then_branch.push_back(std::make_unique<expression::Constant>(10));
+    then_branch.push_back(std::make_unique<expression::Constant>(expression::Type::Int32, 10));
 
     auto expected_if = std::make_unique<expression::IfStatement>(
         std::move(condition),

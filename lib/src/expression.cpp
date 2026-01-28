@@ -10,7 +10,7 @@ namespace ork::expression {
         if (!otherConstant) {
             return false;
         }
-        return value == otherConstant->value;
+        return value == otherConstant->value && type == otherConstant->type;
     }
 
     bool Binary::equals(const Base &other) const {
@@ -113,5 +113,16 @@ namespace ork::expression {
         }
 
         return true;
+    }
+
+    std::string toString(const Type &t) {
+        switch (t) {
+            case Type::Int32:
+                return "I32";
+            case Type::Bool:
+                return "Bool";
+            case Type::Void:
+                return "Void";
+        }
     }
 } // namespace ork::expression

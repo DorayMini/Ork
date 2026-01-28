@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <string>
 #include <memory>
 #include <variant>
 #include <vector>
@@ -19,15 +20,24 @@ namespace ork::expression {
         [[nodiscard]] virtual bool equals(const Base &other) const = 0;
     };
 
+    enum class Type {
+        Int32,
+        Bool,
+        Void
+    };
+
+    std::string toString(const Type& t);
+
     class Constant final : public Base {
     public:
+        Type type;
         Value value;
 
-        explicit Constant(const Value &value) : value(value) {}
+        explicit Constant(Type type, const Value &value) : type(type), value(value) {}
 
         ~Constant() override = default;
 
-        bool equals(const Base &other) const override;
+        [[nodiscard]] bool equals(const Base &other) const override;
     };
 
     enum class BinaryOp {
@@ -74,11 +84,11 @@ namespace ork::expression {
 
     class Variable final : public Base {
     public:
-        lexer::token::TYPE type;
+        Type type;
         std::unique_ptr<Identifier> name;
         std::unique_ptr<Base> value = nullptr;
 
-        explicit Variable(lexer::token::TYPE type, std::unique_ptr<Identifier> name, std::unique_ptr<Base> value)
+        explicit Variable(Type type, std::unique_ptr<Identifier> name, std::unique_ptr<Base> value)
             : type(type), name(std::move(name)), value(std::move(value)) {
         }
 
@@ -87,22 +97,18 @@ namespace ork::expression {
         [[nodiscard]] bool equals(const Base &other) const override;
     };
 
-    enum class ReturnType {
-        Void
-    };
-
     class FunctionDecl final : public Base {
     public:
         std::unique_ptr<Identifier> name;
         std::vector<std::unique_ptr<Base> > body;
         std::vector<std::unique_ptr<Variable>> arguments;
-        ReturnType returnType;
+        Type returnType;
 
         explicit FunctionDecl(
-            std::unique_ptr<Identifier> name,
-            std::vector<std::unique_ptr<Base> > body = {},
-            std::vector<std::unique_ptr<Variable>> arguments = {},
-            ReturnType returnType = ReturnType::Void )
+                std::unique_ptr<Identifier> name,
+                std::vector<std::unique_ptr<Base> > body = {},
+                std::vector<std::unique_ptr<Variable>> arguments = {},
+                Type returnType = Type::Void )
             : name(std::move(name)), body(std::move(body)), arguments(std::move(arguments)), returnType(returnType) {}
 
         ~FunctionDecl() override = default;

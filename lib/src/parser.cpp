@@ -15,7 +15,7 @@ namespace ork {
     std::vector<std::unique_ptr<expression::Base>> parser::parse() {
         std::vector<std::unique_ptr<expression::Base>> result;
 
-        while (!tokens_.empty()) {
+        while (!_tokens.empty()) {
             result.emplace_back(std::move(parseStatement()));
         }
 
@@ -24,29 +24,29 @@ namespace ork {
 
     std::unique_ptr<expression::Base> parser::parseStatement() {
         if (std::holds_alternative<lexer::token::KEYWORD>(peek())) {
-            switch (std::get<lexer::token::KEYWORD>(take())) {
+            switch (std::get<lexer::token::KEYWORD>(peek())) {
                 case lexer::token::KEYWORD::FN:
                     return parseFunctionDecl();
                 case lexer::token::KEYWORD::IF:
                     return parseIfStatement();
+                case lexer::token::KEYWORD::INT32:
+                case lexer::token::KEYWORD::BOOL:
+                    return parseVariable();
                 default:
                     throw std::runtime_error("unrecognized keyword");
             }
-        }
-        if (std::holds_alternative<lexer::token::TYPE>(peek())) {
-            return parseVariable();
         }
         return parseExpression();
     }
 
     void parser::parseCodeBlock(std::vector<std::unique_ptr<expression::Base>> &output) {
-        while (!tokens_.empty() && !std::holds_alternative<lexer::token::RBRACE>(peek())) {
+        while (!_tokens.empty() && !std::holds_alternative<lexer::token::RBRACE>(peek())) {
             output.emplace_back(parseStatement());
         }
     }
 
     bool parser::isAtStatementTerminator(int leftBindingPower) const {
-        return !tokens_.empty()
+        return !_tokens.empty()
                && std::holds_alternative<lexer::token::SEMICOLON>(peek())
                && leftBindingPower == 0;
     }
@@ -58,7 +58,7 @@ namespace ork {
                     return std::make_unique<expression::Identifier>(expression::Identifier(fmt::to_string(token.value)));
                 },
                 [](lexer::token::INTEGER token) -> std::unique_ptr<expression::Base> {
-                    return std::make_unique<expression::Constant>(expression::Constant(token.value));
+                    return std::make_unique<expression::Constant>(expression::Constant(expression::Type::Int32, token.value));
                 },
                 [this](lexer::token::LPAR token) -> std::unique_ptr<expression::Base> {
                     auto expr = parseExpression(0);
@@ -68,17 +68,27 @@ namespace ork {
                     take();
                     return expr;
                 },
+                [] (lexer::token::KEYWORD key) -> std::unique_ptr<expression::Base> {
+                    switch (key) {
+                        case lexer::token::KEYWORD::TRUE:
+                            return std::make_unique<expression::Constant>(expression::Type::Bool, true);
+                        case lexer::token::KEYWORD::FALSE:
+                            return std::make_unique<expression::Constant>(expression::Type::Bool, false);
+                        default:
+                            throw std::runtime_error("Expected boolean literal 'true' or 'false'");
+                    }
+                },
                 [](auto &&) -> std::unique_ptr<expression::Base> {
                     throw std::runtime_error(fmt::format("Expected integer"));
                 }
             },
             take());
 
-        while (!(tokens_.empty() || std::holds_alternative<lexer::token::SEMICOLON>(peek()))) {
+        while (!(_tokens.empty() || std::holds_alternative<lexer::token::SEMICOLON>(peek()))) {
             auto token = peek();
 
-            auto it = priority_.find(token);
-            if (it == priority_.end()) {
+            auto it = _priority.find(token);
+            if (it == _priority.end()) {
                 return lhs;
             }
             auto [rightBindingPower, op] = it->second;
@@ -105,10 +115,12 @@ namespace ork {
     std::unique_ptr<expression::Variable> parser::parseVariable() {
         auto type = std::visit(
             match{
-                [](lexer::token::TYPE type) -> lexer::token::TYPE {
-                    return type;
+                [](lexer::token::KEYWORD type) -> expression::Type {
+                    if (auto it = _types.find(type); it != _types.end())
+                        return it->second;
+                    throw std::runtime_error("Unexpected token. Expected variable type");
                 },
-                [](auto &&) -> lexer::token::TYPE {
+                [](auto && type) -> expression::Type {
                     throw std::runtime_error("Unexpected token. Expected variable type");
                 }
             },
@@ -140,6 +152,8 @@ namespace ork {
     }
 
     std::unique_ptr<expression::FunctionDecl> parser::parseFunctionDecl() {
+        take(); // take "fn"
+
         auto name = std::visit(
             match{
                 [](lexer::token::IDENTIFIER id) -> std::unique_ptr<expression::Identifier> {
@@ -172,6 +186,7 @@ namespace ork {
     }
 
     std::unique_ptr<expression::Base> parser::parseIfStatement() {
+        take(); // take "if"
         auto If = std::make_unique<expression::IfStatement>(std::move(parseExpression(0)));
 
         if (!std::holds_alternative<lexer::token::LBRACE>(take())) {

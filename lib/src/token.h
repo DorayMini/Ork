@@ -9,10 +9,10 @@ namespace ork::lexer::token {
         FN,
         IF,
         RETURN,
-    };
-
-    enum class TYPE {
-        INTEGER
+        INT32,
+        BOOL,
+        TRUE,
+        FALSE
     };
 
     struct SEMICOLON { auto operator<=>(const SEMICOLON &) const = default; }; // ;
@@ -39,7 +39,7 @@ namespace ork::lexer::token {
     };
     struct INTEGER {
         auto operator<=>(const INTEGER &) const = default;
-        Value value;
+        int value;
     };
     struct STRING {
         auto operator<=>(const STRING &) const = default;
@@ -48,7 +48,6 @@ namespace ork::lexer::token {
 
     using Lexem = std::variant<
         KEYWORD,
-        TYPE,
         LPAR,
         RPAR,
         LBRACE,
